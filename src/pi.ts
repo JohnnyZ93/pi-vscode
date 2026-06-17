@@ -1,7 +1,7 @@
 import { accessSync, constants, realpathSync } from "node:fs";
 import { join } from "node:path";
 import * as vscode from "vscode";
-import { BRIDGE_BOOTSTRAP_LINES, BRIDGE_EXTENSION_PATH } from "./constants.ts";
+import { BRIDGE_BOOTSTRAP_PROMPT, BRIDGE_EXTENSION_PATH } from "./constants.ts";
 import { resolvePiBinary } from "./_resolve.ts";
 import {
   createPiGlobalInstallCommand,
@@ -72,17 +72,20 @@ export async function upgradePiBinary(): Promise<void> {
   void vscode.window.showInformationMessage(`Upgrading Pi with ${manager}. Found pi at: ${piPath}`);
 }
 
-export function createPiShellArgs(
-  extensionUri: vscode.Uri,
-  options: { extraArgs?: string[]; contextLines?: string[] } = {},
-): string[] {
-  const args = createPiBaseArgs(extensionUri, options.contextLines);
-  if (options.extraArgs?.length) args.push(...options.extraArgs);
+export function createPiShellArgs(options: {
+  extensionUri: vscode.Uri;
+  sessionFile?: string;
+  extraArgs?: string[];
+}): string[] {
+  const userArgs = vscode.workspace.getConfiguration("pi-vscode").get<string[]>("args") ?? [];
+  const bridgeArgs = [
+    "--extension",
+    join(options.extensionUri.fsPath, BRIDGE_EXTENSION_PATH),
+  ];
+  const args = options.sessionFile
+    ? ["--session", options.sessionFile, ...bridgeArgs, ...userArgs, ...(options.extraArgs ?? [])]
+    : [...bridgeArgs, ...userArgs, ...(options.extraArgs ?? [])];
   return args;
-}
-
-export function createPiRpcArgs(extensionUri: vscode.Uri): string[] {
-  return ["--mode", "rpc", "--no-session", ...createPiBaseArgs(extensionUri)];
 }
 
 export function createPiEnvironment(
@@ -95,9 +98,21 @@ export function createPiEnvironment(
   };
 }
 
-function createPiBaseArgs(extensionUri: vscode.Uri, contextLines?: string[]): string[] {
-  const args: string[] = ["--extension", join(extensionUri.fsPath, BRIDGE_EXTENSION_PATH)];
-  const bootstrapLines = [...BRIDGE_BOOTSTRAP_LINES, ...(contextLines ?? [])];
-  if (bootstrapLines.length > 0) args.push("--append-system-prompt", bootstrapLines.join("\n\n"));
-  return args;
+/**
+ * Build the pi command string for shell execution.
+ * Uses `exec` so the terminal closes when pi exits.
+ */
+export function buildPiCommand(piPath: string, piArgs: string[]): string {
+  const quotedPath = quoteForShell(piPath);
+  const quotedArgs = piArgs.map(quoteForShell).join(" ");
+  if (quotedArgs) {
+    return `exec ${quotedPath} ${quotedArgs}`;
+  }
+  return `exec ${quotedPath}`;
+}
+
+function quoteForShell(arg: string): string {
+  if (/^[\w./:@%+\-=,]+$/.test(arg)) return arg;
+  const escaped = arg.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+  return `"${escaped}"`;
 }

@@ -4,7 +4,7 @@
     {
       "label": "build",
       "type": "shell",
-      "command": "zsh -c \"pnpm build\"",
+      "command": "pnpm build",
       "group": "build",
       "problemMatcher": []
     }

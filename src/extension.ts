@@ -1,12 +1,11 @@
 import { randomUUID } from "node:crypto";
 import * as vscode from "vscode";
 import { createBridge } from "./bridge/server.ts";
-import { createChatHandler } from "./chat.ts";
 import { TERMINAL_TITLE } from "./constants.ts";
-import { createPiEnvironment, createPiShellArgs, findPiBinary, upgradePiBinary } from "./pi.ts";
+import { findPiBinary, upgradePiBinary } from "./pi.ts";
 import { createPackagesViewProvider } from "./packages.ts";
 import { createSessionTracker } from "./sessions.ts";
-import { buildOpenWithFileContext, createNewTerminal } from "./terminal.ts";
+import { createNewTerminal } from "./terminal.ts";
 
 let extensionUri: vscode.Uri;
 let bridgeConfig: { url: string; token: string } | undefined;
@@ -30,34 +29,17 @@ export async function activate(context: vscode.ExtensionContext) {
     },
   });
 
-  const openTerminal = async (
-    extraArgs?: string[],
-    contextLines?: string[],
-  ): Promise<vscode.Terminal | undefined> => {
+  const openTerminal = async (extraArgs?: string[]): Promise<vscode.Terminal | undefined> => {
     const terminalId = randomUUID();
     const terminal = await createNewTerminal({
       extensionUri,
       bridgeConfig,
       extraArgs,
-      contextLines,
       terminalId,
     });
     if (terminal) sessions.track(terminal, terminalId);
     return terminal;
   };
-
-  const participant = vscode.chat.createChatParticipant(
-    "pi-vscode.chat",
-    createChatHandler({
-      extensionUri,
-      getBridgeConfig: () => bridgeConfig,
-    }),
-  );
-  const logoIcon = {
-    light: vscode.Uri.joinPath(extensionUri, "assets", "logo-light.svg"),
-    dark: vscode.Uri.joinPath(extensionUri, "assets", "logo.svg"),
-  };
-  participant.iconPath = logoIcon;
 
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBarItem.text = "$(pi-logo) Pi";
@@ -66,23 +48,10 @@ export async function activate(context: vscode.ExtensionContext) {
   statusBarItem.show();
 
   context.subscriptions.push(
-    participant,
     statusBarItem,
     vscode.window.onDidCloseTerminal((terminal) => sessions.onClose(terminal)),
     vscode.commands.registerCommand("pi-vscode.open", async () => {
       const terminal = await openTerminal();
-      terminal?.show();
-    }),
-    vscode.commands.registerCommand("pi-vscode.openWithFile", async () => {
-      const terminal = await openTerminal(undefined, buildOpenWithFileContext());
-      terminal?.show();
-    }),
-    vscode.commands.registerCommand("pi-vscode.sendSelection", async () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor) return;
-      const selection = editor.document.getText(editor.selection);
-      if (!selection) return;
-      const terminal = await openTerminal([selection]);
       terminal?.show();
     }),
     vscode.commands.registerCommand("pi-vscode.openInNewWindow", async () => {
@@ -96,20 +65,6 @@ export async function activate(context: vscode.ExtensionContext) {
       "pi-vscode.packages",
       createPackagesViewProvider(findPiBinary),
     ),
-    vscode.window.registerTerminalProfileProvider("pi-vscode.terminal-profile", {
-      provideTerminalProfile() {
-        const terminalId = randomUUID();
-        const baseEnv = createPiEnvironment(bridgeConfig);
-        return new vscode.TerminalProfile({
-          name: TERMINAL_TITLE,
-          shellPath: findPiBinary(),
-          shellArgs: createPiShellArgs(extensionUri),
-          cwd: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
-          env: { ...baseEnv, PI_VSCODE_TERMINAL_ID: terminalId },
-          iconPath: logoIcon,
-        });
-      },
-    }),
   );
 
   if (bridgeConfig) void sessions.restore(extensionUri, bridgeConfig);

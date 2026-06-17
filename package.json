@@ -47,15 +47,6 @@
         }
       }
     },
-    "chatParticipants": [
-      {
-        "id": "pi-vscode.chat",
-        "fullName": "Pi Coding Agent",
-        "name": "pi",
-        "description": "Chat with Pi coding agent",
-        "isSticky": true
-      }
-    ],
     "commands": [
       {
         "command": "pi-vscode.open",
@@ -64,18 +55,6 @@
           "light": "assets/logo-light.svg",
           "dark": "assets/logo.svg"
         }
-      },
-      {
-        "command": "pi-vscode.openWithFile",
-        "title": "Pi: Open with File",
-        "icon": {
-          "light": "assets/logo-light.svg",
-          "dark": "assets/logo.svg"
-        }
-      },
-      {
-        "command": "pi-vscode.sendSelection",
-        "title": "Pi: Send Selection"
       },
       {
         "command": "pi-vscode.upgrade",
@@ -93,23 +72,14 @@
     "menus": {
       "editor/title": [
         {
-          "command": "pi-vscode.openWithFile",
+          "command": "pi-vscode.open",
           "group": "navigation"
         }
       ],
       "explorer/context": [
         {
-          "command": "pi-vscode.openWithFile",
+          "command": "pi-vscode.open",
           "group": "navigation"
-        }
-      ]
-    },
-    "terminal": {
-      "profiles": [
-        {
-          "id": "pi-vscode.terminal-profile",
-          "title": "Pi",
-          "icon": "pi-logo"
         }
       ]
     },
@@ -138,6 +108,24 @@
           "type": "string",
           "default": "",
           "description": "Absolute path to the pi binary. Leave empty for auto-detection."
+        },
+        "pi-vscode.shell": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the shell executable for launching pi. Leave empty to use VS Code's default terminal profile."
+        },
+        "pi-vscode.env": {
+          "type": "object",
+          "default": {},
+          "description": "Environment variables to set in the pi terminal session."
+        },
+        "pi-vscode.args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Extra command-line arguments passed to pi."
         }
       }
     },

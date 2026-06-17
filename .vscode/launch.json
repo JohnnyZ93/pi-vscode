@@ -7,7 +7,7 @@
       "request": "launch",
       "args": ["${workspaceFolder}/src", "--extensionDevelopmentPath=${workspaceFolder}"],
       "outFiles": ["${workspaceFolder}/dist/**/*.cjs"],
-      "preLaunchTask2": "build"
+      "preLaunchTask": "build"
     }
   ]
 }
