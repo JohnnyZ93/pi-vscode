@@ -8,5 +8,7 @@ export default defineConfig({
     file: "dist/extension.cjs",
     format: "cjs",
     sourcemap: true,
+    codeSplitting: false,
+    minify: true,
   },
 });

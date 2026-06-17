@@ -11,6 +11,13 @@
 
 ## Source Files
 
+- `src/packages.ts` — Packages sidebar view with npm registry search and pi package install/uninstall. Uses `shell: true` on Windows to handle npm `.cmd` shims
+- `src/pi/sessions-sidebar.ts` — Sessions sidebar webview provider (list, open, rename, delete sessions)
+- `src/pi/models-sidebar.ts` — Models sidebar webview provider (custom providers, OAuth, API keys)
+- `src/pi/models-sidebar-html.ts` — HTML template for Models sidebar UI
+- `src/pi/models-config.ts` — Pure Node.js models.json CRUD (bypasses pi SDK shell dependency)
+- `src/pi/auth-config.ts` — Pure Node.js auth.json CRUD (bypasses pi SDK shell dependency on Windows)
+- `src/pi/oauth-flow.ts` — OAuth login flow controller
 - `src/extension.ts` — Thin activation/wiring layer for commands, status bar, terminal profile, chat participant, and bridge lifecycle
 - `src/pi.ts` — Pi binary resolution, install prompt, launch args, bridge env helpers
 - `src/terminal.ts` — Terminal creation, terminal placement, open-with-file context helpers
@@ -48,9 +55,10 @@ See [.agents/docs/icons.md](.agents/docs/icons.md)
 ## UI
 
 - **Status bar button** (right-aligned) with `$(pi-logo) Pi` label — opens the pi terminal on click
-- **Packages sidebar view** includes search/install/uninstall package management and an `Upgrade Pi and Packages` button wired to `Pi: Upgrade Pi and Packages`
+- **Packages sidebar view** — Search/install/uninstall package management and an `Upgrade Pi and Packages` button
+- **Sessions sidebar view** — List, open, rename, and delete pi sessions per workspace. Shows session name, modification time, message count, and first message preview. Implemented with pure Node.js file I/O
+- **Models sidebar view** — Three-tab webview: Providers (custom provider/model CRUD), OAuth (login/logout for OAuth providers), API Keys (configure API keys for built-in providers). Uses pure Node.js auth.json/models.json manipulation to avoid pi SDK shell dependency on Windows
 - **Pi footer status** in the terminal TUI shows live VS Code context: active file, cursor/selection, language, dirty state, and diagnostic counts
-- No panel webviews — minimal footprint
 - Activation: `onStartupFinished` so the status bar button appears immediately
 
 ## Commands
@@ -71,6 +79,7 @@ See [.agents/docs/icons.md](.agents/docs/icons.md)
 - Terminal shell is the pi binary itself (not a shell running pi)
 - Every pi launch injects `PI_VSCODE_BRIDGE_URL`, `PI_VSCODE_BRIDGE_TOKEN`, and a per-terminal `PI_VSCODE_TERMINAL_ID` plus `--extension bridge/pi-vscode-bridge.js`
 - On `session_start`, the pi bridge reports `{terminalId, sessionFile}` via the `reportTerminalSession` RPC; VS Code stores the map in `workspaceState` under `pi-vscode.terminalSessions` and, on next activation, recreates each terminal with `--session <sessionFile>` so prior pi conversations resume across IDE reloads. Terminals closed explicitly (non-`Shutdown` exit reason) are removed from the map; entries whose session file no longer exists on disk are pruned on activation
+- **Sessions and Models sidebar views** — Webview-based sidebar panels for managing pi sessions and model configurations. The Models view includes custom provider CRUD, OAuth login, and API key management. Implemented with pure Node.js file I/O to avoid pi SDK's shell-dependent APIs that cause `EINVAL` errors on Windows when bash is not available
 - The bundled pi bridge extension refreshes a `ctx.ui.setStatus("pi-vscode", ...)` footer entry every 1.5 seconds so the bottom of pi's TUI reflects the current VS Code editor context
 - Bridge tool coverage currently includes: current selection, latest cached selection, diagnostics, open editors, workspace folders, aggregate editor state, opening files in VS Code, dirty/save state, document symbols, definitions, type definitions, implementations, declarations, hover info, workspace symbol search, references, code actions, executing code actions, applying workspace edits, document/range formatting through VS Code providers, buffered IDE notifications, and showing VS Code info/warning/error notifications
 - Formatting bridge methods (`formatDocument`, `formatRange`) call `vscode.executeFormatDocumentProvider` / `vscode.executeFormatRangeProvider`, convert the returned `TextEdit[]` into a `WorkspaceEdit`, and apply it with `workspace.applyEdit`
@@ -85,4 +94,4 @@ See [.agents/docs/icons.md](.agents/docs/icons.md)
 - [x] 3. Add buffered bridge notifications for selection/diagnostics/editor/save state changes plus tools to read/clear them
 - [x] 4. Add apply-workspace-edit / quick-fix execution support
 - [x] 5. Add an RPC-driven chat participant path while preserving the terminal workflow for direct Pi usage
-- [ ] 6. Consider a richer webview/session UI backed by the same RPC bridge
+- [x] 6. Sessions and Models sidebar webview views with pure Node.js implementation (bypasses pi SDK shell dependency on Windows)

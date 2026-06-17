@@ -1,7 +1,7 @@
 import { accessSync, constants, realpathSync } from "node:fs";
 import { join } from "node:path";
 import * as vscode from "vscode";
-import { BRIDGE_BOOTSTRAP_PROMPT, BRIDGE_EXTENSION_PATH } from "./constants.ts";
+import { BRIDGE_EXTENSION_PATH } from "./constants.ts";
 import { resolvePiBinary } from "./_resolve.ts";
 import {
   createPiGlobalInstallCommand,

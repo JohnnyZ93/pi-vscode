@@ -4,6 +4,8 @@ import { createBridge } from "./bridge/server.ts";
 import { TERMINAL_TITLE } from "./constants.ts";
 import { findPiBinary, upgradePiBinary } from "./pi.ts";
 import { createPackagesViewProvider } from "./packages.ts";
+import { createSessionsViewProvider } from "./pi/sessions-sidebar.ts";
+import { createModelsViewProvider } from "./pi/models-sidebar.ts";
 import { createSessionTracker } from "./sessions.ts";
 import { createNewTerminal } from "./terminal.ts";
 
@@ -65,6 +67,11 @@ export async function activate(context: vscode.ExtensionContext) {
       "pi-vscode.packages",
       createPackagesViewProvider(findPiBinary),
     ),
+    vscode.window.registerWebviewViewProvider(
+      "pi-vscode.sessions",
+      createSessionsViewProvider(extensionUri, bridgeConfig),
+    ),
+    vscode.window.registerWebviewViewProvider("pi-vscode.models", createModelsViewProvider()),
   );
 
   if (bridgeConfig) void sessions.restore(extensionUri, bridgeConfig);

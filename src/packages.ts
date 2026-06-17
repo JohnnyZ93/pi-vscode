@@ -1,5 +1,9 @@
-import { execFile, spawn, type ChildProcess } from "node:child_process";
+import { spawn, type ChildProcess } from "node:child_process";
 import * as vscode from "vscode";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 export function createPackagesViewProvider(findPiBinary: () => string): vscode.WebviewViewProvider {
   return {
@@ -8,18 +12,29 @@ export function createPackagesViewProvider(findPiBinary: () => string): vscode.W
       webviewView.webview.html = getPackagesHtml();
       let activeProcess: ChildProcess | undefined;
 
-      const refreshInstalled = () => {
+      const refreshInstalled = async () => {
         const bin = findPiBinary();
-        execFile(bin, ["list"], (_err, stdout) => {
+        try {
+          // Use shell: true on Windows to handle .cmd shims
+          const { stdout } = await execFileAsync(bin, ["list"], {
+            shell: process.platform === "win32",
+            windowsHide: true,
+          });
           const packages = parseInstalledPackages(stdout || "");
           webviewView.webview.postMessage({ type: "installed", packages });
-        });
+        } catch {
+          webviewView.webview.postMessage({ type: "installed", packages: [] });
+        }
       };
 
       const runCommand = (args: string[]) => {
         const bin = findPiBinary();
         webviewView.webview.postMessage({ type: "loading", loading: true, output: "" });
-        const proc = spawn(bin, args);
+        // Use shell: true on Windows to handle .cmd shims
+        const proc = spawn(bin, args, {
+          shell: process.platform === "win32",
+          windowsHide: true,
+        });
         activeProcess = proc;
         const onData = (chunk: Buffer) => {
           webviewView.webview.postMessage({ type: "output", text: chunk.toString() });

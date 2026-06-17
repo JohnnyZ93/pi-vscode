@@ -26,6 +26,9 @@
     "typecheck": "tsgo --noEmit --skipLibCheck",
     "test": "pnpm lint && pnpm typecheck"
   },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "^0.79.0"
+  },
   "devDependencies": {
     "@types/node": "^25.5.0",
     "@types/vscode": "^1.110.0",
@@ -98,6 +101,16 @@
           "type": "webview",
           "id": "pi-vscode.packages",
           "name": "Packages"
+        },
+        {
+          "type": "webview",
+          "id": "pi-vscode.sessions",
+          "name": "Sessions"
+        },
+        {
+          "type": "webview",
+          "id": "pi-vscode.models",
+          "name": "Models"
         }
       ]
     },
