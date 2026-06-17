@@ -78,10 +78,7 @@ export function createPiShellArgs(options: {
   extraArgs?: string[];
 }): string[] {
   const userArgs = vscode.workspace.getConfiguration("pi-vscode").get<string[]>("args") ?? [];
-  const bridgeArgs = [
-    "--extension",
-    join(options.extensionUri.fsPath, BRIDGE_EXTENSION_PATH),
-  ];
+  const bridgeArgs = ["--extension", join(options.extensionUri.fsPath, BRIDGE_EXTENSION_PATH)];
   const args = options.sessionFile
     ? ["--session", options.sessionFile, ...bridgeArgs, ...userArgs, ...(options.extraArgs ?? [])]
     : [...bridgeArgs, ...userArgs, ...(options.extraArgs ?? [])];
