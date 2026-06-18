@@ -7,7 +7,7 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
 .header { padding:8px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent)); gap:6px; }
 .header strong { font-size:12px; white-space:nowrap; }
 .header select { flex:1; min-width:0; background:var(--vscode-dropdown-background); color:var(--vscode-dropdown-foreground); border:1px solid var(--vscode-dropdown-border); border-radius:3px; font-size:12px; padding:2px 4px; font-family:inherit; outline:none; }
-.header button { padding:2px 8px; cursor:pointer; background:transparent; color:var(--vscode-foreground); border:1px solid var(--vscode-widget-border,transparent); border-radius:3px; font-size:11px; opacity:0.7; white-space:nowrap; }
+.header button { padding:2px 2px; cursor:pointer; background:transparent; color:var(--vscode-foreground); border:1px solid var(--vscode-widget-border,transparent); border-radius:3px; font-size:11px; opacity:0.7; white-space:nowrap; }
 .header button:hover { opacity:1; }
 .list { flex:1; overflow-y:auto; padding:4px 0; }
 .session-item { padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent)); position:relative; }

@@ -7,7 +7,7 @@ import { findPiBinary } from "../pi.ts";
 
 const execFileAsync = promisify(execFile);
 
-const EXTENSION_ID = "pi0.pi-vscode";
+const EXTENSION_ID = "johnny-zhao.pi-vscode";
 
 export interface SettingsStaticEnv {
   piPath: string;

@@ -47,7 +47,8 @@ export function createPiGlobalInstallCommand(manager: PiPackageManager): string 
     case "bun":
       return `bun install --global ${pkg}`;
     case "npm":
-      return `npm install --global ${pkg}`;
+      // Pi does not require install scripts for normal npm installs.
+      return `npm install --global --ignore-scripts ${pkg}`;
     case "pnpm":
       return `pnpm add --global ${pkg}`;
     case "yarn":

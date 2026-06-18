@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import * as vscode from "vscode";
 import { createBridge } from "./bridge/server.ts";
 import { TERMINAL_TITLE } from "./constants.ts";
-import { findPiBinary, upgradePiBinary } from "./pi.ts";
+import { upgradePiBinary } from "./pi.ts";
 import { createSessionsViewProvider } from "./sessions/sessions-sidebar.ts";
 import { createModelsViewProvider } from "./models/models-sidebar.ts";
 import { createSettingsViewProvider } from "./settings/settings-sidebar.ts";

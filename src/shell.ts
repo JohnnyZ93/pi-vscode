@@ -4,38 +4,23 @@ type ShellKind = "bash" | "powershell" | "cmd" | "unknown";
 
 /**
  * Resolve the shell path to use for launching pi.
- * Priority: pi-vscode.shell → VS Code default terminal profile → error.
+ * Priority: pi-vscode.shell → OS default shell.
+ * - Windows: powershell
+ * - macOS: zsh
+ * - Linux/other: bash
  */
 export function resolveShellPath(): string | undefined {
-  const config = vscode.workspace.getConfiguration("pi-vscode");
-  const customShell = config.get<string>("shell");
+  const customShell = vscode.workspace.getConfiguration("pi-vscode").get<string>("shell");
   if (customShell) return customShell;
 
-  const defaultProfile = readDefaultProfile();
-  if (defaultProfile) {
-    const profilePath = readProfilePath(defaultProfile);
-    if (profilePath) return profilePath;
+  switch (process.platform) {
+    case "win32":
+      return "powershell";
+    case "darwin":
+      return "zsh";
+    default:
+      return "bash";
   }
-
-  void vscode.window.showErrorMessage(
-    "Cannot determine shell for Pi terminal. Set 'pi-vscode.shell' to an absolute shell path, or configure 'terminal.integrated.defaultProfile.{platform}' in VS Code settings.",
-  );
-  return undefined;
-}
-
-function readDefaultProfile(): string | undefined {
-  const terminalConfig = vscode.workspace.getConfiguration("terminal.integrated");
-  const platform = process.platform;
-  const key = platform === "win32" ? "windows" : platform === "darwin" ? "osx" : "linux";
-  return terminalConfig.get<string>(`defaultProfile.${key}`);
-}
-
-function readProfilePath(profileName: string): string | undefined {
-  const terminalConfig = vscode.workspace.getConfiguration("terminal.integrated");
-  const platform = process.platform;
-  const key = platform === "win32" ? "windows" : platform === "darwin" ? "osx" : "linux";
-  const profiles = terminalConfig.get<Record<string, { path?: string }>>(`profiles.${key}`);
-  return profiles?.[profileName]?.path;
 }
 
 /**

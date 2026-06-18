@@ -1,18 +1,38 @@
 {
   "name": "pi-vscode",
-  "displayName": "Pi Coding Agent",
-  "version": "0.0.9",
-  "description": "VS Code extension for pi coding agent",
+  "displayName": "Pi Agent for VS Code",
+  "version": "1.0.0",
+  "description": "Pi coding agent in VS Code. Terminal TUI, sessions, models, and an IDE bridge — minimal and customizable.",
   "categories": [
     "AI",
     "Chat"
   ],
+  "keywords": [
+    "agent",
+    "ai",
+    "ai-assistant",
+    "anthropic",
+    "chat",
+    "claude",
+    "coding-agent",
+    "gemini",
+    "llm",
+    "openai",
+    "pi",
+    "pi-agent",
+    "pi-coding-agent",
+    "terminal",
+    "tui"
+  ],
+  "bugs": {
+    "url": "https://github.com/JohnnyZ93/pi-vscode/issues"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pi0/pi-vscode"
+    "url": "https://github.com/JohnnyZ93/pi-vscode"
   },
-  "publisher": "pi0",
+  "publisher": "johnny-zhao",
   "type": "module",
   "main": "./dist/extension.cjs",
   "scripts": {
@@ -120,7 +140,7 @@
         "pi-vscode.shell": {
           "type": "string",
           "default": "",
-          "description": "Absolute path to the shell executable for launching pi. Leave empty to use VS Code's default terminal profile."
+          "description": "Absolute path to the shell executable for launching pi. Leave empty to use the OS default shell (powershell on Windows, zsh on macOS, bash on Linux)."
         },
         "pi-vscode.env": {
           "type": "object",
@@ -148,6 +168,13 @@
     "onStartupFinished"
   ],
   "icon": "assets/icon.png",
+  "badges": [
+    {
+      "url": "https://img.shields.io/github/stars/JohnnyZ93/pi-vscode?style=social",
+      "description": "Star pi-vscode on Github",
+      "href": "https://github.com/JohnnyZ93/pi-vscode"
+    }
+  ],
   "engines": {
     "vscode": "^1.110.0"
   },
