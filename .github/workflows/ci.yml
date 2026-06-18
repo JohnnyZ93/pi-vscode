@@ -50,6 +50,6 @@ jobs:
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
-      - run: npx ovsx publish *.vsix -p ${{ secrets.OVSX_TOKEN }}
-        env:
-          OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
+      # - run: npx ovsx publish *.vsix -p ${{ secrets.OVSX_TOKEN }}
+      #   env:
+      #     OVSX_TOKEN: ${{ secrets.OVSX_TOKEN }}
