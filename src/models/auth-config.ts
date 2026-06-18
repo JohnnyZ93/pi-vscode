@@ -51,13 +51,13 @@ function ensureDir(path: string): void {
 
 export function readAuthJson(): AuthJson {
   const path = getAuthPath();
-  console.log("[pi-vscode] readAuthJson: path =", path, "exists =", existsSync(path));
+  console.log("[pi-agent-studio] readAuthJson: path =", path, "exists =", existsSync(path));
   if (!existsSync(path)) return { version: 1 };
   try {
     const content = readFileSync(path, "utf8");
     const data = JSON.parse(content) as AuthJson;
     console.log(
-      "[pi-vscode] readAuthJson: loaded keys =",
+      "[pi-agent-studio] readAuthJson: loaded keys =",
       Object.keys(data).filter((k) => k !== "version").length,
     );
     return data;
@@ -231,7 +231,7 @@ export function getApiKeyProviderStatuses(): Array<{
 
     return result;
   } catch (err) {
-    console.error("[pi-vscode] getApiKeyProviderStatuses failed:", err);
+    console.error("[pi-agent-studio] getApiKeyProviderStatuses failed:", err);
     return [];
   }
 }

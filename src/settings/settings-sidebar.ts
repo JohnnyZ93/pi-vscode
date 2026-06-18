@@ -13,12 +13,12 @@ import { getSettingsHtml } from "./settings-sidebar-html.ts";
 
 const LINK_HOME = "https://pi.dev";
 const LINK_PACKAGES = "https://pi.dev/packages";
-const LINK_GITHUB = "https://github.com/JohnnyZ93/pi-vscode";
+const LINK_GITHUB = "https://github.com/JohnnyZ93/pi-agent-studio";
 
 export function createSettingsViewProvider(): vscode.WebviewViewProvider {
   return {
     resolveWebviewView(webviewView) {
-      console.log("[pi-vscode] Settings view: resolveWebviewView called");
+      console.log("[pi-agent-studio] Settings view: resolveWebviewView called");
       webviewView.webview.options = { enableScripts: true };
       webviewView.webview.html = getSettingsHtml();
 
@@ -38,14 +38,14 @@ export function createSettingsViewProvider(): vscode.WebviewViewProvider {
           const piVersion = await detectPiVersion(env.piPath);
           webviewView.webview.postMessage({ type: "piVersion", piVersion });
         } catch (err) {
-          console.error("[pi-vscode] Settings view: pi version detect failed:", err);
+          console.error("[pi-agent-studio] Settings view: pi version detect failed:", err);
           webviewView.webview.postMessage({ type: "piVersion", piVersion: "(unknown)" });
         }
         try {
           const nodeVersion = await detectNodeVersion(env.piPath);
           webviewView.webview.postMessage({ type: "nodeVersion", nodeVersion });
         } catch (err) {
-          console.error("[pi-vscode] Settings view: node version detect failed:", err);
+          console.error("[pi-agent-studio] Settings view: node version detect failed:", err);
           webviewView.webview.postMessage({
             type: "nodeVersion",
             nodeVersion: `${process.version} (extension host)`,
@@ -91,11 +91,11 @@ export function createSettingsViewProvider(): vscode.WebviewViewProvider {
               return;
 
             case "upgrade":
-              await vscode.commands.executeCommand("pi-vscode.upgrade");
+              await vscode.commands.executeCommand("pi-agent-studio.upgrade");
               return;
           }
         } catch (err) {
-          console.error("[pi-vscode] Settings view: error handling message:", err);
+          console.error("[pi-agent-studio] Settings view: error handling message:", err);
           webviewView.webview.postMessage({
             type: "error",
             message: err instanceof Error ? err.message : String(err),
@@ -105,7 +105,7 @@ export function createSettingsViewProvider(): vscode.WebviewViewProvider {
 
       webviewView.onDidChangeVisibility(() => {
         if (webviewView.visible) {
-          console.log("[pi-vscode] Settings view: became visible, refreshing...");
+          console.log("[pi-agent-studio] Settings view: became visible, refreshing...");
           void postData();
         }
       });

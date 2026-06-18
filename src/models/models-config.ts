@@ -65,12 +65,12 @@ export function ensureModelsJsonExists(): string {
 
 export function readModelsJson(): ModelsJson {
   const path = getModelsPath();
-  console.log("[pi-vscode] readModelsJson: path =", path, "exists =", existsSync(path));
+  console.log("[pi-agent-studio] readModelsJson: path =", path, "exists =", existsSync(path));
   if (!existsSync(path)) return { providers: {} };
   try {
     const data = JSON.parse(readFileSync(path, "utf8")) as ModelsJson;
     console.log(
-      "[pi-vscode] readModelsJson: loaded, providers =",
+      "[pi-agent-studio] readModelsJson: loaded, providers =",
       Object.keys(data.providers ?? {}).length,
     );
     return data;

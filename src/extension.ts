@@ -48,42 +48,42 @@ export async function activate(context: vscode.ExtensionContext) {
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBarItem.text = "$(pi-logo) Pi";
   statusBarItem.tooltip = "Open Pi Terminal";
-  statusBarItem.command = "pi-vscode.open";
+  statusBarItem.command = "pi-agent-studio.open";
   statusBarItem.show();
 
   context.subscriptions.push(
     statusBarItem,
     vscode.window.onDidCloseTerminal((terminal) => sessions.onClose(terminal)),
     vscode.workspace.onDidChangeConfiguration((event) => {
-      if (event.affectsConfiguration("pi-vscode.path")) invalidatePiBinaryCache();
+      if (event.affectsConfiguration("pi-agent-studio.path")) invalidatePiBinaryCache();
     }),
-    vscode.commands.registerCommand("pi-vscode.open", async () => {
+    vscode.commands.registerCommand("pi-agent-studio.open", async () => {
       const terminal = await openTerminal();
       terminal?.show();
     }),
-    vscode.commands.registerCommand("pi-vscode.openInNewWindow", async () => {
+    vscode.commands.registerCommand("pi-agent-studio.openInNewWindow", async () => {
       const terminal = await openTerminal();
       if (!terminal) return;
       terminal.show();
       await vscode.commands.executeCommand("workbench.action.moveEditorToNewWindow");
     }),
-    vscode.commands.registerCommand("pi-vscode.upgrade", upgradePiBinary),
-    vscode.commands.registerCommand("pi-vscode.openSettingsJson", async () => {
+    vscode.commands.registerCommand("pi-agent-studio.upgrade", upgradePiBinary),
+    vscode.commands.registerCommand("pi-agent-studio.openSettingsJson", async () => {
       const path = ensureSettingsJsonExists();
       const doc = await vscode.workspace.openTextDocument(path);
       await vscode.window.showTextDocument(doc);
     }),
-    vscode.commands.registerCommand("pi-vscode.openModelsJson", async () => {
+    vscode.commands.registerCommand("pi-agent-studio.openModelsJson", async () => {
       const path = ensureModelsJsonExists();
       const doc = await vscode.workspace.openTextDocument(path);
       await vscode.window.showTextDocument(doc);
     }),
     vscode.window.registerWebviewViewProvider(
-      "pi-vscode.sessions",
+      "pi-agent-studio.sessions",
       createSessionsViewProvider(extensionUri, bridgeConfig, sessions),
     ),
-    vscode.window.registerWebviewViewProvider("pi-vscode.models", createModelsViewProvider()),
-    vscode.window.registerWebviewViewProvider("pi-vscode.settings", createSettingsViewProvider()),
+    vscode.window.registerWebviewViewProvider("pi-agent-studio.models", createModelsViewProvider()),
+    vscode.window.registerWebviewViewProvider("pi-agent-studio.settings", createSettingsViewProvider()),
   );
 
   if (bridgeConfig) void sessions.restore(extensionUri, bridgeConfig);

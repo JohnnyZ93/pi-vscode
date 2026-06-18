@@ -66,7 +66,7 @@ export function createSessionsViewProvider(
             sessions: sessions.map((s) => serializeSession(s)),
           });
         } catch (err) {
-          console.error("[pi-vscode] Sessions view: error fetching sessions:", err);
+          console.error("[pi-agent-studio] Sessions view: error fetching sessions:", err);
           webviewView.webview.postMessage({ type: "sessions", sessions: [] });
         }
       };
@@ -105,7 +105,7 @@ export function createSessionsViewProvider(
             await postSessions();
             break;
           case "new":
-            await vscode.commands.executeCommand("pi-vscode.open");
+            await vscode.commands.executeCommand("pi-agent-studio.open");
             break;
           case "open":
             await openSession(msg.sessionFile, extensionUri, bridgeConfig, sessionTracker);

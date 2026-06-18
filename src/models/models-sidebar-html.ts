@@ -122,7 +122,7 @@ document.querySelectorAll('.tab').forEach(function(el) {
 
 // ====== render dispatch ======
 function renderAll() {
-  if (!VD) { console.log('[pi-vscode models] renderAll: VD is null'); return; }
+  if (!VD) { console.log('[pi-agent-studio models] renderAll: VD is null'); return; }
   if (activeTab === 'providers') renderProv();
   else if (activeTab === 'oauth') renderOAuth();
   else renderApiKeys();

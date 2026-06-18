@@ -10,10 +10,10 @@ English | [简体中文](README.zh-CN.md)
 
 </div>
 
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/johnny-zhao.pi-vscode?label=VS%20Code%20Marketplace&color=blue)](https://marketplace.visualstudio.com/items?itemName=johnny-zhao.pi-vscode)
-[![Open VSX](https://img.shields.io/open-vsx/v/johnny-zhao/pi-vscode?label=Open%20VSX&color=purple)](https://open-vsx.org/extension/johnny-zhao/pi-vscode)
-[![License](https://img.shields.io/github/license/JohnnyZ93/pi-vscode?color=orange&label=License)](https://github.com/JohnnyZ93/pi-vscode/blob/main/LICENSE)
-[![Stars](https://img.shields.io/github/stars/JohnnyZ93/pi-vscode?style=social)](https://github.com/JohnnyZ93/pi-vscode)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/johnny-zhao.pi-agent-studio?label=VS%20Code%20Marketplace&color=blue)](https://marketplace.visualstudio.com/items?itemName=johnny-zhao.pi-agent-studio)
+[![Open VSX](https://img.shields.io/open-vsx/v/johnny-zhao/pi-agent-studio?label=Open%20VSX&color=purple)](https://open-vsx.org/extension/johnny-zhao/pi-agent-studio)
+[![License](https://img.shields.io/github/license/JohnnyZ93/pi-agent-studio?color=orange&label=License)](https://github.com/JohnnyZ93/pi-agent-studio/blob/main/LICENSE)
+[![Stars](https://img.shields.io/github/stars/JohnnyZ93/pi-agent-studio?style=social)](https://github.com/JohnnyZ93/pi-agent-studio)
 
 ## Features
 
@@ -45,14 +45,14 @@ English | [简体中文](README.zh-CN.md)
 
 ## Install
 
-Available on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=johnny-zhao.pi-vscode) and [Open VSX](https://open-vsx.org/extension/johnny-zhao/pi-vscode):
+Available on the [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=johnny-zhao.pi-agent-studio) and [Open VSX](https://open-vsx.org/extension/johnny-zhao/pi-agent-studio):
 
 ```bash
 # VS Code / Cursor
-code --install-extension johnny-zhao.pi-vscode
+code --install-extension johnny-zhao.pi-agent-studio
 
 # Open VSX (VSCodium, etc.)
-ovsx get johnny-zhao/pi-vscode
+ovsx get johnny-zhao/pi-agent-studio
 ```
 
 ## Commands
@@ -126,9 +126,9 @@ Example:
 
 | Setting          | Type     | Default | Description                                                                           |
 | ---------------- | -------- | ------- | ------------------------------------------------------------------------------------- |
-| `pi-vscode.path` | `string` | `""`    | Absolute path to the pi binary (auto-detected if empty)                               |
-| `pi-vscode.env`  | `object` | `{}`    | Environment variables merged into the pi terminal (bridge vars win on key collision)  |
-| `pi-vscode.args` | `array`  | `[]`    | Extra CLI args appended after `--extension` and before any caller-supplied extra args |
+| `pi-agent-studio.path` | `string` | `""`    | Absolute path to the pi binary (auto-detected if empty)                               |
+| `pi-agent-studio.env`  | `object` | `{}`    | Environment variables merged into the pi terminal (bridge vars win on key collision)  |
+| `pi-agent-studio.args` | `array`  | `[]`    | Extra CLI args appended after `--extension` and before any caller-supplied extra args |
 
 ## Building from source
 

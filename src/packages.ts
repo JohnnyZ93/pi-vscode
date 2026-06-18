@@ -59,7 +59,7 @@ export function createPackagesViewProvider(findPiBinary: () => string): vscode.W
         } else if (msg.type === "refresh") {
           refreshInstalled();
         } else if (msg.type === "upgrade") {
-          void vscode.commands.executeCommand("pi-vscode.upgrade");
+          void vscode.commands.executeCommand("pi-agent-studio.upgrade");
         }
       });
     },

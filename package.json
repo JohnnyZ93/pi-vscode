@@ -1,5 +1,5 @@
 {
-  "name": "pi-vscode",
+  "name": "pi-agent-studio",
   "displayName": "Pi Agent Studio",
   "version": "1.0.0",
   "description": "Pi coding agent in VS Code — native terminal TUI with a visual sidebar to manage sessions, models, and settings. No GUI wrapper, full editor bridge.",
@@ -25,12 +25,12 @@
     "tui"
   ],
   "bugs": {
-    "url": "https://github.com/JohnnyZ93/pi-vscode/issues"
+    "url": "https://github.com/JohnnyZ93/pi-agent-studio/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JohnnyZ93/pi-vscode"
+    "url": "https://github.com/JohnnyZ93/pi-agent-studio"
   },
   "publisher": "johnny-zhao",
   "type": "module",
@@ -72,7 +72,7 @@
     },
     "commands": [
       {
-        "command": "pi-vscode.open",
+        "command": "pi-agent-studio.open",
         "title": "Pi: Open",
         "icon": {
           "light": "assets/logo-light.svg",
@@ -80,19 +80,19 @@
         }
       },
       {
-        "command": "pi-vscode.upgrade",
+        "command": "pi-agent-studio.upgrade",
         "title": "Pi: Upgrade Pi"
       },
       {
-        "command": "pi-vscode.openSettingsJson",
+        "command": "pi-agent-studio.openSettingsJson",
         "title": "Pi: Open settings.json"
       },
       {
-        "command": "pi-vscode.openModelsJson",
+        "command": "pi-agent-studio.openModelsJson",
         "title": "Pi: Open models.json"
       },
       {
-        "command": "pi-vscode.openInNewWindow",
+        "command": "pi-agent-studio.openInNewWindow",
         "title": "Pi: Open in New Window",
         "icon": {
           "light": "assets/logo-light.svg",
@@ -103,7 +103,7 @@
     "menus": {
       "editor/title": [
         {
-          "command": "pi-vscode.open",
+          "command": "pi-agent-studio.open",
           "group": "navigation"
         }
       ]
@@ -121,17 +121,17 @@
       "pi": [
         {
           "type": "webview",
-          "id": "pi-vscode.sessions",
+          "id": "pi-agent-studio.sessions",
           "name": "Sessions"
         },
         {
           "type": "webview",
-          "id": "pi-vscode.models",
+          "id": "pi-agent-studio.models",
           "name": "Models"
         },
         {
           "type": "webview",
-          "id": "pi-vscode.settings",
+          "id": "pi-agent-studio.settings",
           "name": "Settings",
           "visibility": "collapsed"
         }
@@ -140,17 +140,17 @@
     "configuration": {
       "title": "Pi",
       "properties": {
-        "pi-vscode.path": {
+        "pi-agent-studio.path": {
           "type": "string",
           "default": "",
           "description": "Absolute path to the pi binary. Leave empty for auto-detection."
         },
-        "pi-vscode.env": {
+        "pi-agent-studio.env": {
           "type": "object",
           "default": {},
           "description": "Environment variables to set in the pi terminal session."
         },
-        "pi-vscode.args": {
+        "pi-agent-studio.args": {
           "type": "array",
           "items": {
             "type": "string"
@@ -162,7 +162,7 @@
     },
     "keybindings": [
       {
-        "command": "pi-vscode.open",
+        "command": "pi-agent-studio.open",
         "key": "alt+shift+p"
       }
     ]
@@ -173,9 +173,9 @@
   "icon": "assets/icon.png",
   "badges": [
     {
-      "url": "https://img.shields.io/github/stars/JohnnyZ93/pi-vscode?style=social",
-      "description": "Star pi-vscode on Github",
-      "href": "https://github.com/JohnnyZ93/pi-vscode"
+      "url": "https://img.shields.io/github/stars/JohnnyZ93/pi-agent-studio?style=social",
+      "description": "Star pi-agent-studio on Github",
+      "href": "https://github.com/JohnnyZ93/pi-agent-studio"
     }
   ],
   "engines": {

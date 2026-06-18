@@ -10,10 +10,10 @@
 
 </div>
 
-[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/johnny-zhao.pi-vscode?label=VS%20Code%20Marketplace&color=blue)](https://marketplace.visualstudio.com/items?itemName=johnny-zhao.pi-vscode)
-[![Open VSX](https://img.shields.io/open-vsx/v/johnny-zhao/pi-vscode?label=Open%20VSX&color=purple)](https://open-vsx.org/extension/johnny-zhao/pi-vscode)
-[![License](https://img.shields.io/github/license/JohnnyZ93/pi-vscode?color=orange&label=License)](https://github.com/JohnnyZ93/pi-vscode/blob/main/LICENSE)
-[![Stars](https://img.shields.io/github/stars/JohnnyZ93/pi-vscode?style=social)](https://github.com/JohnnyZ93/pi-vscode)
+[![VS Code Marketplace](https://img.shields.io/visual-studio-marketplace/v/johnny-zhao.pi-agent-studio?label=VS%20Code%20Marketplace&color=blue)](https://marketplace.visualstudio.com/items?itemName=johnny-zhao.pi-agent-studio)
+[![Open VSX](https://img.shields.io/open-vsx/v/johnny-zhao/pi-agent-studio?label=Open%20VSX&color=purple)](https://open-vsx.org/extension/johnny-zhao/pi-agent-studio)
+[![License](https://img.shields.io/github/license/JohnnyZ93/pi-agent-studio?color=orange&label=License)](https://github.com/JohnnyZ93/pi-agent-studio/blob/main/LICENSE)
+[![Stars](https://img.shields.io/github/stars/JohnnyZ93/pi-agent-studio?style=social)](https://github.com/JohnnyZ93/pi-agent-studio)
 
 ## 特性
 
@@ -45,14 +45,14 @@
 
 ## 安装
 
-已上架 [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=johnny-zhao.pi-vscode) 与 [Open VSX](https://open-vsx.org/extension/johnny-zhao/pi-vscode)：
+已上架 [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=johnny-zhao.pi-agent-studio) 与 [Open VSX](https://open-vsx.org/extension/johnny-zhao/pi-agent-studio)：
 
 ```bash
 # VS Code / Cursor
-code --install-extension johnny-zhao.pi-vscode
+code --install-extension johnny-zhao.pi-agent-studio
 
 # Open VSX（VSCodium 等）
-ovsx get johnny-zhao/pi-vscode
+ovsx get johnny-zhao/pi-agent-studio
 ```
 
 ## 命令
@@ -126,9 +126,9 @@ ovsx get johnny-zhao/pi-vscode
 
 | 设置项           | 类型     | 默认值 | 说明                                                     |
 | ---------------- | -------- | ------ | -------------------------------------------------------- |
-| `pi-vscode.path` | `string` | `""`   | pi 二进制的绝对路径（留空则自动检测）                    |
-| `pi-vscode.env`  | `object` | `{}`   | 合并到 pi 终端的环境变量（与桥接变量冲突时桥接变量优先） |
-| `pi-vscode.args` | `array`  | `[]`   | 追加到 `--extension` 之后、调用方额外参数之前的 CLI 参数 |
+| `pi-agent-studio.path` | `string` | `""`   | pi 二进制的绝对路径（留空则自动检测）                    |
+| `pi-agent-studio.env`  | `object` | `{}`   | 合并到 pi 终端的环境变量（与桥接变量冲突时桥接变量优先） |
+| `pi-agent-studio.args` | `array`  | `[]`   | 追加到 `--extension` 之后、调用方额外参数之前的 CLI 参数 |
 
 ## 从源码构建
 

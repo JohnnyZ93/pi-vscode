@@ -42,7 +42,7 @@ interface ModelsViewData {
 export function createModelsViewProvider(): vscode.WebviewViewProvider {
   return {
     resolveWebviewView(webviewView: vscode.WebviewView) {
-      console.log("[pi-vscode] Models view: resolveWebviewView called");
+      console.log("[pi-agent-studio] Models view: resolveWebviewView called");
       webviewView.webview.options = { enableScripts: true };
       const modelsPath = getModelsPath();
       webviewView.webview.html = getModelsHtml(modelsPath);
@@ -53,13 +53,13 @@ export function createModelsViewProvider(): vscode.WebviewViewProvider {
         try {
           const data = buildModelsViewData();
           console.log(
-            "[pi-vscode] Models view: posting data with",
+            "[pi-agent-studio] Models view: posting data with",
             data.providers.length,
             "providers",
           );
           webviewView.webview.postMessage({ type: "data", data, title: modelsPath });
         } catch (err) {
-          console.error("[pi-vscode] Models view: error building data:", err);
+          console.error("[pi-agent-studio] Models view: error building data:", err);
         }
       };
 
@@ -67,14 +67,14 @@ export function createModelsViewProvider(): vscode.WebviewViewProvider {
 
       webviewView.onDidChangeVisibility(() => {
         if (webviewView.visible) {
-          console.log("[pi-vscode] Models view: became visible, refreshing...");
+          console.log("[pi-agent-studio] Models view: became visible, refreshing...");
           postData();
         }
       });
 
       webviewView.webview.onDidReceiveMessage(async (msg) => {
         if (msg.type === "ready") {
-          console.log("[pi-vscode] Models view: webview ready, resending data");
+          console.log("[pi-agent-studio] Models view: webview ready, resending data");
           postData();
           return;
         }
@@ -210,7 +210,7 @@ function buildModelsViewData(): ModelsViewData {
   try {
     const modelsJson = readModelsJson();
     console.log(
-      "[pi-vscode] Models view: read models config, providers:",
+      "[pi-agent-studio] Models view: read models config, providers:",
       Object.keys(modelsJson.providers ?? {}).length,
     );
 
@@ -226,17 +226,17 @@ function buildModelsViewData(): ModelsViewData {
 
     // OAuth providers
     const oauthStatuses = getOAuthProviderStatuses();
-    console.log("[pi-vscode] Models view: OAuth providers:", oauthStatuses.length);
+    console.log("[pi-agent-studio] Models view: OAuth providers:", oauthStatuses.length);
 
     // API key providers - modelCount already returned by getApiKeyProviderStatuses
     // (computed from the SDK registry, same as pi-web).
     const apikeyStatuses = getApiKeyProviderStatuses();
 
-    console.log("[pi-vscode] Models view: API key providers:", apikeyStatuses.length);
+    console.log("[pi-agent-studio] Models view: API key providers:", apikeyStatuses.length);
 
     return { providers: customProviders, modelsJson, oauthStatuses, apikeyStatuses };
   } catch (err) {
-    console.error("[pi-vscode] Models view: Failed to build data:", err);
+    console.error("[pi-agent-studio] Models view: Failed to build data:", err);
     return {
       providers: [],
       modelsJson: { providers: {} },

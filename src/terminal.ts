@@ -23,7 +23,7 @@ export async function createNewTerminal(options: {
 
   const baseEnv = createPiEnvironment(options.bridgeConfig);
   const userEnv =
-    vscode.workspace.getConfiguration("pi-vscode").get<Record<string, string>>("env") ?? {};
+    vscode.workspace.getConfiguration("pi-agent-studio").get<Record<string, string>>("env") ?? {};
   const env = {
     ...userEnv,
     ...baseEnv,

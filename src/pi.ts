@@ -12,13 +12,13 @@ import {
 
 let piExistsCache: boolean | undefined;
 
-/** Invalidate the cached existence check; call when `pi-vscode.path` changes. */
+/** Invalidate the cached existence check; call when `pi-agent-studio.path` changes. */
 export function invalidatePiBinaryCache(): void {
   piExistsCache = undefined;
 }
 
 export function findPiBinary(): string {
-  const config = vscode.workspace.getConfiguration("pi-vscode");
+  const config = vscode.workspace.getConfiguration("pi-agent-studio");
   return resolvePiBinary({
     customPath: config.get<string>("path") || undefined,
     workspaceDirs: (vscode.workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath),
@@ -84,7 +84,7 @@ export function createPiShellArgs(options: {
   sessionFile?: string;
   extraArgs?: string[];
 }): string[] {
-  const userArgs = vscode.workspace.getConfiguration("pi-vscode").get<string[]>("args") ?? [];
+  const userArgs = vscode.workspace.getConfiguration("pi-agent-studio").get<string[]>("args") ?? [];
   const bridgeArgs = ["--extension", join(options.extensionUri.fsPath, BRIDGE_EXTENSION_PATH)];
   const args = options.sessionFile
     ? ["--session", options.sessionFile, ...bridgeArgs, ...userArgs, ...(options.extraArgs ?? [])]

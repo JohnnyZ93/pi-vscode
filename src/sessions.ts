@@ -3,7 +3,7 @@ import * as vscode from "vscode";
 import { TERMINAL_TITLE } from "./constants.ts";
 import { createNewTerminal } from "./terminal.ts";
 
-const SESSIONS_KEY = "pi-vscode.terminalSessions";
+const SESSIONS_KEY = "pi-agent-studio.terminalSessions";
 
 type TerminalSessionMap = Record<string, string>;
 

@@ -27,7 +27,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: pi-vscode
+          name: pi-agent-studio
           path: "*.vsix"
 
   publish:
@@ -37,7 +37,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: pi-vscode
+          name: pi-agent-studio
 
       - uses: actions/setup-node@v6
         with:
