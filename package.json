@@ -61,7 +61,7 @@
       },
       {
         "command": "pi-vscode.upgrade",
-        "title": "Pi: Upgrade Pi and Packages"
+        "title": "Pi: Upgrade Pi"
       },
       {
         "command": "pi-vscode.openInNewWindow",
@@ -103,8 +103,8 @@
         },
         {
           "type": "webview",
-          "id": "pi-vscode.packages",
-          "name": "Packages",
+          "id": "pi-vscode.settings",
+          "name": "Settings",
           "visibility": "collapsed"
         }
       ]

@@ -120,7 +120,7 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
   <button id="search-btn">Search</button>
 </div>
 <div class="action-bar">
-  <button id="upgrade-btn" title="Upgrade the pi CLI, then run pi update for installed packages">Upgrade Pi and Packages</button>
+  <button id="upgrade-btn" title="Reinstall the pi CLI globally to the latest version">Upgrade Pi</button>
 </div>
 <div id="installed-section" style="display:none;padding:8px;border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent))">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -135,7 +135,7 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
   <button onclick="vscode.postMessage({type:'cancel'})" style="padding:4px 12px;cursor:pointer;background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:#fff;border:none;border-radius:4px;font-size:12px">Cancel</button>
 </div>
 <div id="list" class="pkg-list"><div class="status">Loading...</div></div>
-<div style="padding:4px 8px 8px;text-align:right;flex-shrink:0"><a href="https://shittycodingagent.ai/packages" target="_blank" style="font-size:11px;color:var(--vscode-textLink-foreground);text-decoration:none;opacity:0.8">Browse packages ↗</a></div>
+<div style="padding:4px 8px 8px;text-align:right;flex-shrink:0"><a href="https://pi.dev/packages" target="_blank" style="font-size:11px;color:var(--vscode-textLink-foreground);text-decoration:none;opacity:0.8">Browse packages ↗</a></div>
 <script>
 const vscode = acquireVsCodeApi();
 const searchInput = document.getElementById('search');

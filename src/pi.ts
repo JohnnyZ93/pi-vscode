@@ -5,7 +5,6 @@ import { BRIDGE_EXTENSION_PATH } from "./constants.ts";
 import { resolvePiBinary } from "./_resolve.ts";
 import {
   createPiGlobalInstallCommand,
-  createPiUpgradeCommand,
   guessPiPackageManager,
   PI_PACKAGE_MANAGERS,
   type PiPackageManager,
@@ -68,7 +67,7 @@ export async function upgradePiBinary(): Promise<void> {
 
   const terminal = vscode.window.createTerminal({ name: "Upgrade Pi" });
   terminal.show();
-  terminal.sendText(createPiUpgradeCommand(manager, piPath));
+  terminal.sendText(createPiGlobalInstallCommand(manager));
   void vscode.window.showInformationMessage(`Upgrading Pi with ${manager}. Found pi at: ${piPath}`);
 }
 

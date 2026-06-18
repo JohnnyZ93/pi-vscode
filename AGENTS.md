@@ -17,6 +17,10 @@
 - `src/models/models-sidebar-html.ts` — HTML template for Models sidebar UI
 - `src/models/models-config.ts` — Pure Node.js models.json CRUD (bypasses pi SDK shell dependency)
 - `src/models/auth-config.ts` — Pure Node.js auth.json CRUD (bypasses pi SDK shell dependency on Windows)
+- `src/settings/settings-sidebar.ts` — Settings sidebar webview provider (env info, links, upgrade, system prompt files, settings.json opener)
+- `src/settings/settings-sidebar-html.ts` — HTML template for Settings sidebar UI
+- `src/settings/settings-config.ts` — Pure Node.js read/write helpers for `~/.pi/agent/SYSTEM.md`, `APPEND_SYSTEM.md`, `settings.json` paths
+- `src/settings/settings-env.ts` — Environment info collection: pi binary path/version (via `pi --version` with SDK package.json fallback), extension version, node version
 - `src/models/oauth-flow.ts` — OAuth login flow controller mirroring pi-web's `app/api/auth/login/[provider]/route.ts`: drives `AuthStorage.login()` with a shared memoized "manual input" request so `onAuth` / `onPrompt` / `onManualCodeInput` resolve the same promise (single token surfaced to the webview), and lets `AuthStorage.login()` itself persist OAuth credentials to `auth.json` (do NOT write a placeholder credential afterwards — that corrupts the SDK-managed entry)
 - `src/extension.ts` — Thin activation/wiring layer for commands, status bar, terminal profile, chat participant, and bridge lifecycle
 - `src/pi.ts` — Pi binary resolution, install prompt, launch args, bridge env helpers
@@ -55,9 +59,10 @@ See [.agents/docs/icons.md](.agents/docs/icons.md)
 ## UI
 
 - **Status bar button** (right-aligned) with `$(pi-logo) Pi` label — opens the pi terminal on click
-- **Packages sidebar view** — Search/install/uninstall package management and an `Upgrade Pi and Packages` button
+- **Packages sidebar view** — Search/install/uninstall package management and an `Upgrade Pi` button
 - **Sessions sidebar view** — List, open, rename, and delete pi sessions per workspace. When multiple workspace folders are open, the header becomes a dropdown to pick a single workspace and only its sessions are loaded (lazy per-folder fetch). Shows session name, modification time, message count, and first message preview. Implemented with pure Node.js file I/O
 - **Models sidebar view** — Three-tab webview: Providers (custom provider/model CRUD), OAuth (login/logout for OAuth providers), API Keys (configure API keys for built-in providers). Uses pure Node.js auth.json/models.json manipulation to avoid pi SDK shell dependency on Windows
+- **Settings sidebar view** — Environment info (pi version/path, pi-vscode version, node version), external links (`https://pi.dev`, `https://pi.dev/packages` — labeled `Pi 官网` / `Pi 扩展包`, full URL on hover), `Upgrade Pi` button (binary only, no `pi update`), `Open settings.json` button (creates empty `{}` if missing; full path shown on hover), plus two textareas: **Append** (`~/.pi/agent/APPEND_SYSTEM.md`, listed first, recommended) and **Override** (`~/.pi/agent/SYSTEM.md`, listed last with a yellow warning that it replaces Pi's built-in prompt and may change behavior). Pi auto-loads these files via its `DefaultResourceLoader`, so no CLI flags are injected. Default `visibility: collapsed`
 - **Pi footer status** in the terminal TUI shows live VS Code context: active file, cursor/selection, language, dirty state, and diagnostic counts
 - Activation: `onStartupFinished` so the status bar button appears immediately
 
@@ -66,7 +71,7 @@ See [.agents/docs/icons.md](.agents/docs/icons.md)
 - `Pi: Open` (`Ctrl+Alt+3`) — Opens/focuses the pi terminal
 - `Pi: Open with File` — Opens pi terminal and sends current file path (with selection range if any); also in editor title bar menu
 - `Pi: Send Selection` — Sends editor selection text to the pi terminal
-- `Pi: Upgrade Pi and Packages` — Finds the resolved pi binary, infers npm/bun/pnpm/yarn from its path (prompting if ambiguous), runs the matching global install/update command in a terminal, then runs `pi update` to update installed pi extensions/packages
+- `Pi: Upgrade Pi` — Finds the resolved pi binary, infers npm/bun/pnpm/yarn from its path (prompting if ambiguous), and runs the matching global install command (`@mariozechner/pi-coding-agent@latest`) in a terminal. Does **not** run `pi update` for installed packages — that will be a separate command later
 - `@pi` chat participant — Uses pi RPC mode for streamed chat responses while preserving the terminal-based workflow for normal Pi commands
 
 ## Notes
@@ -75,7 +80,7 @@ See [.agents/docs/icons.md](.agents/docs/icons.md)
 - Terminal cleaned up on close, recreated on next command
 - CJS wrapper pattern allows `"type": "module"` while satisfying VS Code's `require()` loading
 - Pi binary auto-detected from common paths (`~/.bun/bin/pi`, `~/.local/bin/pi`, etc.) or configurable via `pi-vscode.path` setting
-- `Pi: Upgrade Pi and Packages` reuses the binary resolver, guesses the package manager from the discovered binary path, launches the corresponding global install command for `@mariozechner/pi-coding-agent@latest`, and chains `pi update` afterward
+- `Pi: Upgrade Pi` reuses the binary resolver, guesses the package manager from the discovered binary path, and launches the corresponding global install command for `@mariozechner/pi-coding-agent@latest`. Package updates (`pi update`) are intentionally not chained here — to be split into a future dedicated command
 - Terminal shell is the pi binary itself (not a shell running pi)
 - Every pi launch injects `PI_VSCODE_BRIDGE_URL`, `PI_VSCODE_BRIDGE_TOKEN`, and a per-terminal `PI_VSCODE_TERMINAL_ID` plus `--extension bridge/pi-vscode-bridge.js`
 - On `session_start`, the pi bridge reports `{terminalId, sessionFile}` via the `reportTerminalSession` RPC; VS Code stores the map in `workspaceState` under `pi-vscode.terminalSessions` and, on next activation, recreates each terminal with `--session <sessionFile>` so prior pi conversations resume across IDE reloads. Terminals closed explicitly (non-`Shutdown` exit reason) are removed from the map; entries whose session file no longer exists on disk are pruned on activation
@@ -87,12 +92,3 @@ See [.agents/docs/icons.md](.agents/docs/icons.md)
 - Bridge notifications now reset dirty state on save, refresh latest selection on active-editor switches, `vscode_get_selection` falls back to the latest cached VS Code selection while the pi terminal has focus, and mutating VS Code bridge tools are marked sequential to reduce parallel edit races
 - The bundled pi bridge truncates oversized JSON tool results into a valid wrapper object, and VS Code chat RPC auto-cancels unsupported extension UI dialog requests so RPC sessions do not deadlock
 - README bridge docs now group tools into inspection vs action categories, include formatting tools and `vscode_show_notification`, and document important parameter/behavior notes (`selection` vs `start`/`end`, notification polling, cached code action ids)
-
-## Bridge TODO
-
-- [x] 1. Add `checkDocumentDirty` and `saveDocument` bridge methods and pi tools
-- [x] 2. Add symbol/reference/code-action bridge methods and pi tools
-- [x] 3. Add buffered bridge notifications for selection/diagnostics/editor/save state changes plus tools to read/clear them
-- [x] 4. Add apply-workspace-edit / quick-fix execution support
-- [x] 5. Add an RPC-driven chat participant path while preserving the terminal workflow for direct Pi usage
-- [x] 6. Sessions and Models sidebar webview views with pure Node.js implementation (bypasses pi SDK shell dependency on Windows)
