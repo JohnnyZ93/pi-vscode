@@ -83,7 +83,10 @@ export async function activate(context: vscode.ExtensionContext) {
       createSessionsViewProvider(extensionUri, bridgeConfig, sessions),
     ),
     vscode.window.registerWebviewViewProvider("pi-agent-studio.models", createModelsViewProvider()),
-    vscode.window.registerWebviewViewProvider("pi-agent-studio.settings", createSettingsViewProvider()),
+    vscode.window.registerWebviewViewProvider(
+      "pi-agent-studio.settings",
+      createSettingsViewProvider(),
+    ),
   );
 
   if (bridgeConfig) void sessions.restore(extensionUri, bridgeConfig);

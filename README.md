@@ -124,8 +124,8 @@ Example:
 
 ## Configuration
 
-| Setting          | Type     | Default | Description                                                                           |
-| ---------------- | -------- | ------- | ------------------------------------------------------------------------------------- |
+| Setting                | Type     | Default | Description                                                                           |
+| ---------------------- | -------- | ------- | ------------------------------------------------------------------------------------- |
 | `pi-agent-studio.path` | `string` | `""`    | Absolute path to the pi binary (auto-detected if empty)                               |
 | `pi-agent-studio.env`  | `object` | `{}`    | Environment variables merged into the pi terminal (bridge vars win on key collision)  |
 | `pi-agent-studio.args` | `array`  | `[]`    | Extra CLI args appended after `--extension` and before any caller-supplied extra args |
