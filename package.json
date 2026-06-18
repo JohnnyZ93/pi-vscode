@@ -137,11 +137,6 @@
           "default": "",
           "description": "Absolute path to the pi binary. Leave empty for auto-detection."
         },
-        "pi-vscode.shell": {
-          "type": "string",
-          "default": "",
-          "description": "Absolute path to the shell executable for launching pi. Leave empty to use the OS default shell (powershell on Windows, zsh on macOS, bash on Linux)."
-        },
         "pi-vscode.env": {
           "type": "object",
           "default": {},

@@ -1,7 +1,7 @@
 import { accessSync, constants } from "node:fs";
 import { join } from "node:path";
 
-const WIN_EXECUTABLE_EXTENSIONS = [".cmd", ".exe", ".ps1"];
+const WIN_EXECUTABLE_EXTENSIONS = [".exe", ".cmd", ".ps1"];
 
 export interface ResolveOptions {
   /** User-configured custom path */
@@ -39,6 +39,10 @@ export function resolvePiBinary(opts: ResolveOptions = {}): string {
   // probe for .cmd/.exe/.ps1 variants when the custom path has no extension.
   if (opts.customPath) {
     if (isWin) {
+      try {
+        access(opts.customPath, constants.F_OK);
+        return opts.customPath;
+      } catch {}
       const resolved = resolveWindowsExecutable(opts.customPath, access);
       if (resolved) return resolved;
     }

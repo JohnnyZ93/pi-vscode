@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import * as vscode from "vscode";
 import { createBridge } from "./bridge/server.ts";
 import { TERMINAL_TITLE } from "./constants.ts";
-import { upgradePiBinary } from "./pi.ts";
+import { upgradePiBinary, invalidatePiBinaryCache } from "./pi.ts";
 import { createSessionsViewProvider } from "./sessions/sessions-sidebar.ts";
 import { createModelsViewProvider } from "./models/models-sidebar.ts";
 import { createSettingsViewProvider } from "./settings/settings-sidebar.ts";
@@ -52,6 +52,9 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     statusBarItem,
     vscode.window.onDidCloseTerminal((terminal) => sessions.onClose(terminal)),
+    vscode.workspace.onDidChangeConfiguration((event) => {
+      if (event.affectsConfiguration("pi-vscode.path")) invalidatePiBinaryCache();
+    }),
     vscode.commands.registerCommand("pi-vscode.open", async () => {
       const terminal = await openTerminal();
       terminal?.show();

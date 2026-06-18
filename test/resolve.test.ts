@@ -19,7 +19,20 @@ describe("resolvePiBinary", () => {
     expect(resolvePiBinary({ customPath: "/custom/pi" })).toBe("/custom/pi");
   });
 
-  it("resolves custom path to .cmd on windows when extensionless", () => {
+  it("keeps custom extensionless path on windows when the file itself exists (e.g. nvm4w bash shim)", () => {
+    const customPath = "C:\\nvm4w\\nodejs\\pi";
+    const cmdPath = "C:\\nvm4w\\nodejs\\pi.cmd";
+    // Both the bash shim AND pi.cmd exist; we must NOT silently upgrade to .cmd,
+    // otherwise the shell layer flips from git-bash to cmd.exe.
+    const result = resolvePiBinary({
+      customPath,
+      platform: "win32",
+      access: mockAccess(new Set([customPath, cmdPath])),
+    });
+    expect(result).toBe(customPath);
+  });
+
+  it("resolves custom path to .cmd on windows when extensionless file is missing", () => {
     const customPath = "C:\\nvm4w\\nodejs\\pi";
     const cmdPath = "C:\\nvm4w\\nodejs\\pi.cmd";
     const result = resolvePiBinary({
@@ -249,16 +262,16 @@ describe("guessPiPackageManager", () => {
 describe("createPiGlobalInstallCommand", () => {
   it("returns global install commands for supported package managers", () => {
     expect(createPiGlobalInstallCommand("npm")).toBe(
-      "npm install --global @mariozechner/pi-coding-agent@latest",
+      "npm install --global --ignore-scripts @earendil-works/pi-coding-agent@latest",
     );
     expect(createPiGlobalInstallCommand("bun")).toBe(
-      "bun install --global @mariozechner/pi-coding-agent@latest",
+      "bun install --global @earendil-works/pi-coding-agent@latest",
     );
     expect(createPiGlobalInstallCommand("pnpm")).toBe(
-      "pnpm add --global @mariozechner/pi-coding-agent@latest",
+      "pnpm add --global @earendil-works/pi-coding-agent@latest",
     );
     expect(createPiGlobalInstallCommand("yarn")).toBe(
-      "yarn global add @mariozechner/pi-coding-agent@latest",
+      "yarn global add @earendil-works/pi-coding-agent@latest",
     );
   });
 });
@@ -266,13 +279,13 @@ describe("createPiGlobalInstallCommand", () => {
 describe("createPiUpgradeCommand", () => {
   it("runs pi update after the global install", () => {
     expect(createPiUpgradeCommand("npm", "/Users/dev/.npm-global/bin/pi", "linux")).toBe(
-      "npm install --global @mariozechner/pi-coding-agent@latest && /Users/dev/.npm-global/bin/pi update",
+      "npm install --global --ignore-scripts @earendil-works/pi-coding-agent@latest && /Users/dev/.npm-global/bin/pi update",
     );
   });
 
   it("quotes pi paths with spaces", () => {
     expect(createPiUpgradeCommand("npm", "/Users/dev/my tools/pi", "linux")).toBe(
-      "npm install --global @mariozechner/pi-coding-agent@latest && '/Users/dev/my tools/pi' update",
+      "npm install --global --ignore-scripts @earendil-works/pi-coding-agent@latest && '/Users/dev/my tools/pi' update",
     );
   });
 });

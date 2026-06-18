@@ -12,6 +12,11 @@ import {
 
 let piExistsCache: boolean | undefined;
 
+/** Invalidate the cached existence check; call when `pi-vscode.path` changes. */
+export function invalidatePiBinaryCache(): void {
+  piExistsCache = undefined;
+}
+
 export function findPiBinary(): string {
   const config = vscode.workspace.getConfiguration("pi-vscode");
   return resolvePiBinary({
@@ -22,6 +27,7 @@ export function findPiBinary(): string {
 
 export async function ensurePiBinary(): Promise<string | undefined> {
   const piPath = findPiBinary();
+  console.log(piPath);
 
   if (piExistsCache === undefined) {
     try {
@@ -40,7 +46,7 @@ export async function ensurePiBinary(): Promise<string | undefined> {
     ...managers,
   );
   if (action) {
-    piExistsCache = undefined;
+    invalidatePiBinaryCache();
     const terminal = vscode.window.createTerminal({ name: "Install Pi" });
     terminal.show();
     terminal.sendText(createPiGlobalInstallCommand(action));
@@ -71,6 +77,9 @@ export async function upgradePiBinary(): Promise<void> {
   void vscode.window.showInformationMessage(`Upgrading Pi with ${manager}. Found pi at: ${piPath}`);
 }
 
+/**
+ * Build the pi CLI argument list (without the binary itself).
+ */
 export function createPiShellArgs(options: {
   extensionUri: vscode.Uri;
   sessionFile?: string;
@@ -94,21 +103,3 @@ export function createPiEnvironment(
   };
 }
 
-/**
- * Build the pi command string for shell execution.
- * Uses `exec` so the terminal closes when pi exits.
- */
-export function buildPiCommand(piPath: string, piArgs: string[]): string {
-  const quotedPath = quoteForShell(piPath);
-  const quotedArgs = piArgs.map(quoteForShell).join(" ");
-  if (quotedArgs) {
-    return `exec ${quotedPath} ${quotedArgs}`;
-  }
-  return `exec ${quotedPath}`;
-}
-
-function quoteForShell(arg: string): string {
-  if (/^[\w./:@%+\-=,]+$/.test(arg)) return arg;
-  const escaped = arg.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-  return `"${escaped}"`;
-}

@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { TERMINAL_TITLE } from "./constants.ts";
-import { buildPiCommand, createPiEnvironment, createPiShellArgs, ensurePiBinary } from "./pi.ts";
-import { buildShellArgs, resolveShellPath } from "./shell.ts";
+import { createPiEnvironment, createPiShellArgs, ensurePiBinary } from "./pi.ts";
+import { buildPiCommand, buildShellArgs, resolveShellForPi } from "./shell.ts";
 
 export async function createNewTerminal(options: {
   extensionUri: vscode.Uri;
@@ -13,8 +13,7 @@ export async function createNewTerminal(options: {
   const piPath = await ensurePiBinary();
   if (!piPath) return undefined;
 
-  const shellPath = resolveShellPath();
-  if (!shellPath) return undefined;
+  const shell = resolveShellForPi(piPath);
 
   const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   const viewColumn = findPiColumn() ?? findUnusedColumn() ?? vscode.ViewColumn.Beside;
@@ -24,8 +23,8 @@ export async function createNewTerminal(options: {
     sessionFile: options.sessionFile,
     extraArgs: options.extraArgs,
   });
-  const piCommand = buildPiCommand(piPath, piArgs);
-  const shellArgs = buildShellArgs(shellPath, piCommand);
+  const piCommand = buildPiCommand(shell.kind, piPath, piArgs);
+  const shellArgs = buildShellArgs(shell.kind, piCommand);
 
   const baseEnv = createPiEnvironment(options.bridgeConfig);
   const userEnv =
@@ -38,7 +37,7 @@ export async function createNewTerminal(options: {
 
   const terminal = vscode.window.createTerminal({
     name: TERMINAL_TITLE,
-    shellPath,
+    shellPath: shell.path,
     shellArgs,
     location: { viewColumn },
     isTransient: true,
