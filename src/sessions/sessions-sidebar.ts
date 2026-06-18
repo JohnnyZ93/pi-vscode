@@ -5,44 +5,101 @@ import * as vscode from "vscode";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
 import type { SessionInfo } from "@earendil-works/pi-coding-agent";
 import { createNewTerminal } from "../terminal.ts";
+import { getSessionsHtml } from "./sessions-sidebar-html.ts";
 
-export interface WorkspaceSessions {
-  workspace: vscode.WorkspaceFolder;
-  sessions: SessionInfo[];
+export interface WorkspaceOption {
+  name: string;
+  fsPath: string;
 }
 
 export function createSessionsViewProvider(
   extensionUri: vscode.Uri,
   bridgeConfig: { url: string; token: string } | undefined,
 ): vscode.WebviewViewProvider {
+  let selectedWorkspace: string | undefined;
+
+  const pickInitialWorkspace = (): string | undefined => {
+    const folders = vscode.workspace.workspaceFolders;
+    if (!folders || folders.length === 0) return undefined;
+    // Prefer the workspace containing the active editor
+    const active = vscode.window.activeTextEditor?.document.uri;
+    if (active) {
+      const match = vscode.workspace.getWorkspaceFolder(active);
+      if (match) return match.uri.fsPath;
+    }
+    return folders[0]!.uri.fsPath;
+  };
+
   return {
     resolveWebviewView(webviewView: vscode.WebviewView) {
-      console.log("[pi-vscode] Sessions view: resolveWebviewView called");
       webviewView.webview.options = { enableScripts: true };
+
+      const folders = vscode.workspace.workspaceFolders ?? [];
+      if (!selectedWorkspace || !folders.some((f) => f.uri.fsPath === selectedWorkspace)) {
+        selectedWorkspace = pickInitialWorkspace();
+      }
+
       webviewView.webview.html = getSessionsHtml();
 
+      const postWorkspaces = () => {
+        const workspaces: WorkspaceOption[] = (vscode.workspace.workspaceFolders ?? []).map(
+          (f) => ({ name: f.name, fsPath: f.uri.fsPath }),
+        );
+        webviewView.webview.postMessage({
+          type: "workspaces",
+          workspaces,
+          selected: selectedWorkspace,
+        });
+      };
+
       const postSessions = async () => {
-        console.log("[pi-vscode] Sessions view: fetching sessions...");
+        if (!selectedWorkspace) {
+          webviewView.webview.postMessage({ type: "sessions", sessions: [] });
+          return;
+        }
         try {
-          const data = await listWorkspaceSessions();
-          console.log(
-            "[pi-vscode] Sessions view: found",
-            data.length,
-            "workspaces with",
-            data.reduce((sum, w) => sum + w.sessions.length, 0),
-            "sessions",
-          );
-          webviewView.webview.postMessage({ type: "sessions", data });
+          const sessions = await SessionManager.list(selectedWorkspace);
+          webviewView.webview.postMessage({
+            type: "sessions",
+            sessions: sessions.map((s) => serializeSession(s)),
+          });
         } catch (err) {
           console.error("[pi-vscode] Sessions view: error fetching sessions:", err);
+          webviewView.webview.postMessage({ type: "sessions", sessions: [] });
         }
       };
 
-      postSessions();
+      const refreshAll = async () => {
+        postWorkspaces();
+        await postSessions();
+      };
+
+      void refreshAll();
+
+      const folderSub = vscode.workspace.onDidChangeWorkspaceFolders(() => {
+        const current = vscode.workspace.workspaceFolders ?? [];
+        if (!current.some((f) => f.uri.fsPath === selectedWorkspace)) {
+          selectedWorkspace = pickInitialWorkspace();
+        }
+        void refreshAll();
+      });
+
+      const visSub = webviewView.onDidChangeVisibility(() => {
+        if (webviewView.visible) void refreshAll();
+      });
+
+      webviewView.onDidDispose(() => {
+        folderSub.dispose();
+        visSub.dispose();
+      });
 
       webviewView.webview.onDidReceiveMessage(async (msg) => {
         switch (msg.type) {
           case "refresh":
+            await refreshAll();
+            break;
+          case "selectWorkspace":
+            selectedWorkspace = msg.fsPath;
             await postSessions();
             break;
           case "open":
@@ -62,18 +119,14 @@ export function createSessionsViewProvider(
   };
 }
 
-async function listWorkspaceSessions(): Promise<WorkspaceSessions[]> {
-  const folders = vscode.workspace.workspaceFolders ?? [];
-  const results: WorkspaceSessions[] = [];
-  for (const folder of folders) {
-    try {
-      const sessions = await SessionManager.list(folder.uri.fsPath);
-      results.push({ workspace: folder, sessions });
-    } catch {
-      // Skip folders where session listing fails
-    }
-  }
-  return results;
+function serializeSession(s: SessionInfo) {
+  return {
+    path: s.path,
+    name: s.name || "",
+    firstMessage: s.firstMessage || "",
+    messageCount: s.messageCount || 0,
+    modified: s.modified instanceof Date ? s.modified.toISOString() : (s.modified ?? ""),
+  };
 }
 
 async function openSession(
@@ -134,5 +187,3 @@ async function deleteSession(sessionFile: string): Promise<void> {
 
   unlinkSync(sessionFile);
 }
-
-import { getSessionsHtml } from "./sessions-sidebar-html.ts";

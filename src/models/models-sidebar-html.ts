@@ -1,4 +1,6 @@
-export function getModelsHtml(): string {
+export function getModelsHtml(title: string): string {
+  const escHtml = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   return `<!DOCTYPE html>
 <html style="height:100%;margin:0;padding:0">
 <head><meta charset="utf-8"><style>
@@ -61,7 +63,7 @@ body{height:100%;margin:0;padding:0;font-family:var(--vscode-font-family);font-s
 .tab.active{opacity:1;border-bottom-color:var(--vscode-focusBorder)}
 </style></head>
 <body>
-<div class="header"><strong>Models</strong><button onclick="refresh()">↻</button></div>
+<div class="header"><strong title="${escHtml(title)}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:rtl;text-align:left;">${escHtml(title)}</strong><button onclick="refresh()">↻</button></div>
 <div id="error-toast" class="error-toast"></div>
 <div class="tabs">
   <div class="tab active" data-tab="providers" onclick="switchTab('providers')">Providers</div>
@@ -306,7 +308,7 @@ function removeApiKey(id){if(confirm('Remove API key for "'+id+'"?'))vsc.postMes
 window.addEventListener('message',function(e){
   var msg=e.data;
   console.log('[pi-vscode models] received msg type:', msg.type, 'full msg:', JSON.stringify(msg).slice(0,200));
-  if(msg.type==='data'){VD=msg.data;console.log('[pi-vscode models] data providers:', VD?VD.providers.length:'no VD', 'VD:', JSON.stringify(VD).slice(0,500));renderAll()}
+  if(msg.type==='data'){VD=msg.data;if(msg.title){var t=document.querySelector('.header strong');if(t){t.textContent=msg.title;t.title=msg.title;}}console.log('[pi-vscode models] data providers:', VD?VD.providers.length:'no VD', 'VD:', JSON.stringify(VD).slice(0,500));renderAll()}
   else if(msg.type==='oauthProgress'){oauthState=msg.event;if(activeTab==='oauth')renderOAuth()}
   else if(msg.type==='error'){showErr(msg.message)}
 });

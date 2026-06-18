@@ -9,6 +9,7 @@ import {
   addModel,
   updateModel,
   deleteModel,
+  getModelsPath,
   type ModelsJson,
 } from "./models-config.ts";
 import { startOAuthFlow, type OAuthProgressEvent, type OAuthFlowController } from "./oauth-flow.ts";
@@ -41,7 +42,8 @@ export function createModelsViewProvider(): vscode.WebviewViewProvider {
     resolveWebviewView(webviewView: vscode.WebviewView) {
       console.log("[pi-vscode] Models view: resolveWebviewView called");
       webviewView.webview.options = { enableScripts: true };
-      webviewView.webview.html = getModelsHtml();
+      const modelsPath = getModelsPath();
+      webviewView.webview.html = getModelsHtml(modelsPath);
 
       let activeOAuthFlow: OAuthFlowController | undefined;
 
@@ -53,13 +55,20 @@ export function createModelsViewProvider(): vscode.WebviewViewProvider {
             data.providers.length,
             "providers",
           );
-          webviewView.webview.postMessage({ type: "data", data });
+          webviewView.webview.postMessage({ type: "data", data, title: modelsPath });
         } catch (err) {
           console.error("[pi-vscode] Models view: error building data:", err);
         }
       };
 
       postData();
+
+      webviewView.onDidChangeVisibility(() => {
+        if (webviewView.visible) {
+          console.log("[pi-vscode] Models view: became visible, refreshing...");
+          postData();
+        }
+      });
 
       webviewView.webview.onDidReceiveMessage(async (msg) => {
         if (msg.type === "ready") {

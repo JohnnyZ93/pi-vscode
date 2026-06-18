@@ -44,7 +44,7 @@ export interface ModelsJson {
 // Path helpers
 // ============================================================================
 
-function getModelsPath(): string {
+export function getModelsPath(): string {
   return join(getAgentDir(), "models.json");
 }
 

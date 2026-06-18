@@ -56,7 +56,7 @@ See [.agents/docs/icons.md](.agents/docs/icons.md)
 
 - **Status bar button** (right-aligned) with `$(pi-logo) Pi` label — opens the pi terminal on click
 - **Packages sidebar view** — Search/install/uninstall package management and an `Upgrade Pi and Packages` button
-- **Sessions sidebar view** — List, open, rename, and delete pi sessions per workspace. Shows session name, modification time, message count, and first message preview. Implemented with pure Node.js file I/O
+- **Sessions sidebar view** — List, open, rename, and delete pi sessions per workspace. When multiple workspace folders are open, the header becomes a dropdown to pick a single workspace and only its sessions are loaded (lazy per-folder fetch). Shows session name, modification time, message count, and first message preview. Implemented with pure Node.js file I/O
 - **Models sidebar view** — Three-tab webview: Providers (custom provider/model CRUD), OAuth (login/logout for OAuth providers), API Keys (configure API keys for built-in providers). Uses pure Node.js auth.json/models.json manipulation to avoid pi SDK shell dependency on Windows
 - **Pi footer status** in the terminal TUI shows live VS Code context: active file, cursor/selection, language, dirty state, and diagnostic counts
 - Activation: `onStartupFinished` so the status bar button appears immediately
