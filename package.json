@@ -78,12 +78,6 @@
           "command": "pi-vscode.open",
           "group": "navigation"
         }
-      ],
-      "explorer/context": [
-        {
-          "command": "pi-vscode.open",
-          "group": "navigation"
-        }
       ]
     },
     "viewsContainers": {
@@ -99,11 +93,6 @@
       "pi": [
         {
           "type": "webview",
-          "id": "pi-vscode.packages",
-          "name": "Packages"
-        },
-        {
-          "type": "webview",
           "id": "pi-vscode.sessions",
           "name": "Sessions"
         },
@@ -111,6 +100,12 @@
           "type": "webview",
           "id": "pi-vscode.models",
           "name": "Models"
+        },
+        {
+          "type": "webview",
+          "id": "pi-vscode.packages",
+          "name": "Packages",
+          "visibility": "collapsed"
         }
       ]
     },

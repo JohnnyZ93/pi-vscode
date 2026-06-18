@@ -4,8 +4,8 @@ import { createBridge } from "./bridge/server.ts";
 import { TERMINAL_TITLE } from "./constants.ts";
 import { findPiBinary, upgradePiBinary } from "./pi.ts";
 import { createPackagesViewProvider } from "./packages.ts";
-import { createSessionsViewProvider } from "./pi/sessions-sidebar.ts";
-import { createModelsViewProvider } from "./pi/models-sidebar.ts";
+import { createSessionsViewProvider } from "./sessions/sessions-sidebar.ts";
+import { createModelsViewProvider } from "./models/models-sidebar.ts";
 import { createSessionTracker } from "./sessions.ts";
 import { createNewTerminal } from "./terminal.ts";
 
