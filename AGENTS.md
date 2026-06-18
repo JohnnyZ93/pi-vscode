@@ -10,7 +10,7 @@ This file provides guidance to Code Agent when working with code in this reposit
 - `pnpm fmt` — auto-fix with `oxlint --fix` + `oxfmt`
 - `pnpm lint` — `oxlint . && oxfmt --check .`
 - `pnpm typecheck` — `tsgo --noEmit --skipLibCheck` (Microsoft TypeScript Native Preview, NOT `tsc`)
-- `pnpm test` — runs `lint && typecheck` only. **`vitest` is installed but not wired into `pnpm test`**; run it directly: `pnpm vitest run` or `pnpm vitest run test/resolve.test.ts test/shell.test.ts`
+- `pnpm test` — runs `lint && typecheck` only. **`vitest` is installed but not wired into `pnpm test`**; run it directly: `pnpm vitest run`
 - `pnpm install-local` — package and install the `.vsix` into local VS Code
 - `pnpm release [major|minor|patch]` — bumps `package.json`, packages, commits, tags, pushes (CI publishes). Add `--local` to publish via `vsce`/`ovsx` from the dev machine
 - Always run `pnpm fmt` **and** `pnpm typecheck` before finalizing changes
@@ -23,29 +23,18 @@ Three cooperating pieces, no framework:
 2. **Local HTTP bridge** (`src/bridge/*`) — `createBridge` boots a localhost server with a per-session auth token. URL+token are injected as `PI_VSCODE_BRIDGE_URL` / `PI_VSCODE_BRIDGE_TOKEN` env vars into every pi terminal, alongside a per-terminal `PI_VSCODE_TERMINAL_ID`. Handlers serve RPC calls for editor state, diagnostics, symbols, definitions, hovers, references, code actions, formatting, and workspace edits.
 3. **Bundled pi extension** (`bridge/pi-vscode-bridge.js`) — Loaded into every pi launch via `--extension <path>`. Registers `vscode_*` tools that call the bridge over HTTP. Also refreshes `ctx.ui.setStatus("pi-vscode", ...)` every ~1.5s so pi's TUI footer reflects live VS Code context.
 
-Terminal launch flow (`src/terminal.ts` + `src/pi.ts` + `src/shell.ts`):
+Terminal launch flow (`src/terminal.ts` + `src/pi.ts`):
 
-- Pi is **not** spawned directly. `resolveShellForPi(piPath)` picks the shell based on the pi binary's extension:
-  - Unix: `$SHELL` or `/bin/bash` (kind: `bash`)
-  - Windows + `.ps1` pi shim: `powershell` (kind: `powershell`)
-  - Windows + no extension (e.g. nvm4w / npm POSIX shim): git-bash `bash.exe` — probed FIRST in `%ProgramFiles%\Git\{bin,usr\bin}`, `%ProgramFiles(x86)%\Git\...`, `%LOCALAPPDATA%\Programs\Git\...`, THEN PATH while skipping `System32`/`SysWOW64`/`Sysnative` (those host the WSL launcher `bash.exe`, not POSIX bash — routing pi through WSL mangles Win32 paths). Falls back to bare `bash` (kind: `bash`). Pair this with `pi-vscode.path` pointed at the extensionless bash shim (resolver keeps the path as-is when the file exists; see next bullet).
-  - Windows + anything else (`.cmd` / `.bat` / `.exe`): `%ComSpec%` (kind: `cmd`)
-- `buildPiCommand(kind, piPath, args)` builds the command per shell:
-  - bash: `exec '<path>' args` (replaces process; clean exit; single-quoted with `'\''` escapes)
-  - powershell: `& '<path>' args` (PowerShell call operator; no `exec` keyword; single-quoted with `''` escapes)
-  - cmd: `"<path>" args` (no `exec`; double-quoted with `""` escapes)
-- `buildShellArgs(kind, command)` wraps it (interactive launch, used by `terminal.ts`):
-  - bash: `-i -l -c <cmd>` (interactive login — sources nvm/conda/asdf)
-  - powershell: `-NoLogo -NoProfile -ExecutionPolicy Bypass -Command <cmd>` (bypass avoids `.ps1` policy blocks)
-  - cmd: `/d /c <cmd>` (skip AutoRun, run command)
-- `buildShellArgsNonInteractive(kind, command)` is the same wrapper for short-lived child processes (`pi --version`, `pi list`). Only difference: bash uses `-c` (no `-i -l`) so user rc files don't run — prevents banners/prompts from polluting stdout or hanging the 5s timeout. Used by `settings/settings-env.ts` and `packages.ts`. **Don't use plain `execFile(piPath, ...)` on Windows** — it can't run `.cmd`/`.ps1` shims; always go through this wrapper.
+- Pi is spawned **directly** by VS Code's terminal: `shellPath = piPath`, `shellArgs = piArgs`.
+- Implication for `pi-vscode.path`: point it at whatever pi shim works in your environment. On Windows nvm4w/npm setups, `pi.cmd` runs via cmd, `pi.ps1` via PowerShell — both fine.
+- For short-lived child processes (`pi --version` in `settings-env.ts`, package-manager probes in `upgrade.ts`), use plain `execFile(piPath, args, ...)`. On Windows `child_process.execFile` runs `.cmd`/`.bat` via cmd internally when the path has that extension — no manual shell wrapping required for the current pi shims.
 - Bridge extension is appended via `--extension bridge/pi-vscode-bridge.js`. User extra args (`pi-vscode.args`) and user env (`pi-vscode.env`) are merged in; bridge env wins on key collision.
-- Terminal placement: reuses existing PI Code column → first unused ViewColumn → `Beside`. Editor group is locked after creation.
 
 Session restoration (`src/sessions.ts`):
 
 - On `session_start`, the bundled bridge RPCs `reportTerminalSession({terminalId, sessionFile})`. The tracker persists `{terminalId → sessionFile}` to `workspaceState["pi-vscode.terminalSessions"]`.
 - On activation, each stored entry (whose `sessionFile` still exists on disk) is relaunched with `--session <sessionFile>` so conversations survive IDE reload. Terminals closed by the user (non-`Shutdown` exit reason) are pruned from the map; missing-on-disk entries are also pruned on restore.
+- The tracker also keeps an in-memory `terminalsById: Map<terminalId, vscode.Terminal>` so the Sessions sidebar can call `findTerminalBySessionFile(sessionFile)` and **reuse** an already-open terminal instead of spawning a duplicate. The Sessions sidebar header has a `+` button that delegates to `pi-vscode.open` for blank-session creation.
 
 CJS wrapper pattern: source is ESM (`"type": "module"`), bundled by rolldown → `dist/extension.cjs` (CJS, `external: vscode`, minified). VS Code's `require()` loader works because the output is CJS.
 
@@ -53,14 +42,13 @@ Sidebar views (all webview, registered under `pi` activity container):
 
 - **Sessions** (`src/sessions/`) — Per-workspace session list; dropdown when multiple workspace folders exist (lazy per-folder fetch).
 - **Models** (`src/models/`) — Three tabs: Providers (CRUD), OAuth, API Keys. Reads/writes `~/.pi/agent/models.json` and `auth.json` through `models-config.ts` / `auth-config.ts` using **pure Node.js fs** to bypass pi SDK's shell-dependent APIs (`EINVAL` on Windows without bash).
-- **Settings** (`src/settings/`) — Env info, links, `Upgrade Pi` button, `Open settings.json`, and two textareas: **Append** (`~/.pi/agent/APPEND_SYSTEM.md`) and **Override** (`~/.pi/agent/SYSTEM.md`). Pi auto-loads these via its `DefaultResourceLoader`, so no CLI flags are injected. Default `visibility: collapsed`.
+- **Settings** (`src/settings/`) — Env info, links, `Upgrade Pi` button, `Open settings.json`, and two textareas: **Append** (`~/.pi/agent/APPEND_SYSTEM.md`) and **Override** (`~/.pi/agent/SYSTEM.md`). Pi auto-loads these via its `DefaultResourceLoader`, so no CLI flags are injected. Default `visibility: collapsed`. Node version shown in the env block is the Node that **actually runs pi**, not the extension host: `detectNodeVersion` (`settings-env.ts`) realpaths `piPath`, looks for `node`/`node.exe` in the same directory (matches nvm/nvm4w/bun/pnpm layouts), then `execFile`s `-p process.versions.node`. Falls back to `process.version + " (extension host)"` when no sibling node is found — do NOT replace this with `process.version`, that returns VS Code's bundled Node (e.g. v24) and misleads nvm users.
 - Packages sidebar (`src/packages.ts`) exists in source but is **not** registered in `package.json` views — code is currently dormant; verify before referencing.
 
 ## Critical Patterns
 
 - **Pi npm package is `@earendil-works/pi-coding-agent`** (see `src/upgrade.ts` `PI_PACKAGE_NAME`). The README/install instructions still mention the legacy `@mariozechner/pi-coding-agent` name — do not propagate the old name into new code.
-- **Pi binary resolution** (`src/_resolve.ts`): workspace `node_modules/.bin/pi` → known global dirs (`~/.bun/bin`, `~/.local/bin`, `~/.npm-global/bin`; on Windows `%APPDATA%/npm`, `%LOCALAPPDATA%/pnpm`) → PATH → fallback `"pi"`. On Windows, **explicit `customPath` is respected as-is when the file exists** — we do NOT silently "upgrade" `C:\nvm4w\nodejs\pi` to `pi.cmd`, because that flips the shell from git-bash to cmd.exe and breaks bash-shim launches. Only when the configured path is missing do we probe `.exe` → `.cmd` → `.ps1` (auto-detect on workspace/global/PATH lookups also uses that order, so the default lands on `.cmd` which runs cleanly in cmd.exe). Use `F_OK` not `X_OK` on Windows. `piExistsCache` (in `src/pi.ts`) is invalidated by `invalidatePiBinaryCache()` — wired to `onDidChangeConfiguration("pi-vscode.path")` and to the post-install prompt branch.
-- **Shell choice is path-driven, not configurable.** There used to be a `pi-vscode.shell` setting; it was removed because a mismatched (shell, pi-extension) combo always breaks (e.g. PowerShell can't `exec` a `.cmd` shim cleanly, cmd can't run `.ps1` or extensionless bash shims, neither can run an extensionless bash script). Users on nvm4w / git-bash setups should point `pi-vscode.path` at the extensionless bash shim (e.g. `C:\nvm4w\nodejs\pi`); the resolver keeps that path verbatim and the shell layer auto-selects `bash.exe`. Anything more exotic should be wrapped in a custom script.
+- **Pi binary resolution** (`src/_resolve.ts`): workspace `node_modules/.bin/pi` → known global dirs (`~/.bun/bin`, `~/.local/bin`, `~/.npm-global/bin`; on Windows `%APPDATA%/npm`, `%LOCALAPPDATA%/pnpm`) → PATH → fallback `"pi"`. On Windows, **explicit `customPath` is respected as-is when the file exists**. Only when the configured path is missing do we probe `.exe` → `.cmd` → `.ps1` (auto-detect on workspace/global/PATH lookups also uses that order, so the default lands on `.cmd` which VS Code spawns cleanly). Use `F_OK` not `X_OK` on Windows. `piExistsCache` (in `src/pi.ts`) is invalidated by `invalidatePiBinaryCache()` — wired to `onDidChangeConfiguration("pi-vscode.path")` and to the post-install prompt branch.
 - **Package manager inference** (`src/upgrade.ts` `guessPiPackageManager`): path-segment heuristic. `npm install --global` uses `--ignore-scripts`. `Pi: Upgrade Pi` only upgrades the binary; `createPiUpgradeCommand` (binary + `pi update`) exists but is intentionally **not** wired to any command yet.
 - **Models Providers tab** uses event delegation with `data-action`/`data-id` (no inline `onclick` string concatenation — broke on dashes/quotes in ids). Renames combine with field updates into a single `renameProviderAndUpdate` message so they apply atomically. Empty-string fields are sent as `null` and converted to `undefined` so `JSON.stringify` drops them.
 - **OAuth flow** (`src/models/oauth-flow.ts`) mirrors pi-web's `app/api/auth/login/[provider]/route.ts`: drives `AuthStorage.login()` with a shared memoized "manual input" request so `onAuth` / `onPrompt` / `onManualCodeInput` resolve the same promise. **Let `AuthStorage.login()` persist credentials itself** — do NOT write a placeholder credential afterwards (corrupts the SDK-managed entry).
@@ -75,6 +63,8 @@ Sidebar views (all webview, registered under `pi` activity container):
 - `pi-vscode.open` (`Alt+Shift+P`) — open/focus pi terminal (also editor title bar)
 - `pi-vscode.openInNewWindow` — open pi then `workbench.action.moveEditorToNewWindow`
 - `pi-vscode.upgrade` — binary-only upgrade flow (does **not** run `pi update`)
+- `pi-vscode.openSettingsJson` — open `~/.pi/agent/settings.json` in editor (creates empty `{}` if missing)
+- `pi-vscode.openModelsJson` — open `~/.pi/agent/models.json` in editor (creates empty `{ providers: {} }` if missing)
 
 > Earlier docs mentioned `Pi: Open with File`, `Pi: Send Selection`, and an `@pi` chat participant. These are removed — do not re-add references unless reimplemented.
 

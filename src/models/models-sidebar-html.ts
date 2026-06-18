@@ -9,7 +9,7 @@ body{height:100%;margin:0;padding:0;font-family:var(--vscode-font-family);font-s
 .header{padding:8px;display:flex;align-items:center;gap:6px;flex-shrink:0;border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent))}
 .header strong{font-size:12px;white-space:nowrap;flex:1;min-width:0}
 .header-actions{display:flex;gap:2px;flex-shrink:0}
-.header button{padding:2px 2px;cursor:pointer;background:transparent;color:var(--vscode-foreground);border:1px solid var(--vscode-widget-border,transparent);border-radius:3px;font-size:11px;opacity:0.7;white-space:nowrap}
+.header button{padding:2px 4px;cursor:pointer;background:transparent;color:var(--vscode-foreground);border:1px solid var(--vscode-widget-border,transparent);border-radius:3px;font-size:12px;opacity:0.7;white-space:nowrap}
 .header button:hover{opacity:1}
 .main{flex:1;overflow-y:auto}
 .section-title{padding:8px 10px 4px;font-size:11px;font-weight:600;opacity:.7;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;justify-content:space-between}

@@ -8,7 +8,7 @@ import {
   readTextFile,
   writeTextFile,
 } from "./settings-config.ts";
-import { collectStaticEnv, detectPiVersion } from "./settings-env.ts";
+import { collectStaticEnv, detectNodeVersion, detectPiVersion } from "./settings-env.ts";
 import { getSettingsHtml } from "./settings-sidebar-html.ts";
 
 const LINK_HOME = "https://pi.dev";
@@ -40,6 +40,16 @@ export function createSettingsViewProvider(): vscode.WebviewViewProvider {
         } catch (err) {
           console.error("[pi-vscode] Settings view: pi version detect failed:", err);
           webviewView.webview.postMessage({ type: "piVersion", piVersion: "(unknown)" });
+        }
+        try {
+          const nodeVersion = await detectNodeVersion(env.piPath);
+          webviewView.webview.postMessage({ type: "nodeVersion", nodeVersion });
+        } catch (err) {
+          console.error("[pi-vscode] Settings view: node version detect failed:", err);
+          webviewView.webview.postMessage({
+            type: "nodeVersion",
+            nodeVersion: `${process.version} (extension host)`,
+          });
         }
       };
 

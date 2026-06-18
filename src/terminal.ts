@@ -1,7 +1,6 @@
 import * as vscode from "vscode";
 import { TERMINAL_TITLE } from "./constants.ts";
 import { createPiEnvironment, createPiShellArgs, ensurePiBinary } from "./pi.ts";
-import { buildPiCommand, buildShellArgs, resolveShellForPi } from "./shell.ts";
 
 export async function createNewTerminal(options: {
   extensionUri: vscode.Uri;
@@ -13,8 +12,6 @@ export async function createNewTerminal(options: {
   const piPath = await ensurePiBinary();
   if (!piPath) return undefined;
 
-  const shell = resolveShellForPi(piPath);
-
   const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   const viewColumn = findPiColumn() ?? findUnusedColumn() ?? vscode.ViewColumn.Beside;
 
@@ -23,8 +20,6 @@ export async function createNewTerminal(options: {
     sessionFile: options.sessionFile,
     extraArgs: options.extraArgs,
   });
-  const piCommand = buildPiCommand(shell.kind, piPath, piArgs);
-  const shellArgs = buildShellArgs(shell.kind, piCommand);
 
   const baseEnv = createPiEnvironment(options.bridgeConfig);
   const userEnv =
@@ -37,8 +32,8 @@ export async function createNewTerminal(options: {
 
   const terminal = vscode.window.createTerminal({
     name: TERMINAL_TITLE,
-    shellPath: shell.path,
-    shellArgs,
+    shellPath: piPath,
+    shellArgs: piArgs,
     location: { viewColumn },
     isTransient: true,
     cwd,
@@ -67,7 +62,7 @@ function findPiColumn(): vscode.ViewColumn | undefined {
 function findUnusedColumn(): vscode.ViewColumn | undefined {
   const used = new Set<vscode.ViewColumn>();
   for (const group of vscode.window.tabGroups.all) {
-    if (group.viewColumn !== undefined) used.add(group.viewColumn);
+    if (group.viewColumn !== undefined && group.tabs.length > 0) used.add(group.viewColumn);
   }
   for (let column = vscode.ViewColumn.One; column <= vscode.ViewColumn.Nine; column++) {
     if (!used.has(column)) return column;

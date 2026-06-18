@@ -1,8 +1,8 @@
 {
   "name": "pi-vscode",
-  "displayName": "Pi Agent for VS Code",
+  "displayName": "Pi Agent Studio",
   "version": "1.0.0",
-  "description": "Pi coding agent in VS Code. Terminal TUI, sessions, models, and an IDE bridge — minimal and customizable.",
+  "description": "Pi coding agent in VS Code — native terminal TUI with a visual sidebar to manage sessions, models, and settings. No GUI wrapper, full editor bridge.",
   "categories": [
     "AI",
     "Chat"
@@ -82,6 +82,14 @@
       {
         "command": "pi-vscode.upgrade",
         "title": "Pi: Upgrade Pi"
+      },
+      {
+        "command": "pi-vscode.openSettingsJson",
+        "title": "Pi: Open settings.json"
+      },
+      {
+        "command": "pi-vscode.openModelsJson",
+        "title": "Pi: Open models.json"
       },
       {
         "command": "pi-vscode.openInNewWindow",

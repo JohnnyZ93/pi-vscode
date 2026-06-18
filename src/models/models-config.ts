@@ -48,6 +48,17 @@ export function getModelsPath(): string {
   return join(getAgentDir(), "models.json");
 }
 
+/** Ensure models.json exists (create empty `{ providers: {} }` if missing) and return its path. */
+export function ensureModelsJsonExists(): string {
+  const path = getModelsPath();
+  if (!existsSync(path)) {
+    const dir = dirname(path);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(path, JSON.stringify({ providers: {} }, null, 2) + "\n", "utf8");
+  }
+  return path;
+}
+
 // ============================================================================
 // Read / Write
 // ============================================================================

@@ -5,7 +5,9 @@ import { TERMINAL_TITLE } from "./constants.ts";
 import { upgradePiBinary, invalidatePiBinaryCache } from "./pi.ts";
 import { createSessionsViewProvider } from "./sessions/sessions-sidebar.ts";
 import { createModelsViewProvider } from "./models/models-sidebar.ts";
+import { ensureModelsJsonExists } from "./models/models-config.ts";
 import { createSettingsViewProvider } from "./settings/settings-sidebar.ts";
+import { ensureSettingsJsonExists } from "./settings/settings-config.ts";
 import { createSessionTracker } from "./sessions.ts";
 import { createNewTerminal } from "./terminal.ts";
 
@@ -66,9 +68,19 @@ export async function activate(context: vscode.ExtensionContext) {
       await vscode.commands.executeCommand("workbench.action.moveEditorToNewWindow");
     }),
     vscode.commands.registerCommand("pi-vscode.upgrade", upgradePiBinary),
+    vscode.commands.registerCommand("pi-vscode.openSettingsJson", async () => {
+      const path = ensureSettingsJsonExists();
+      const doc = await vscode.workspace.openTextDocument(path);
+      await vscode.window.showTextDocument(doc);
+    }),
+    vscode.commands.registerCommand("pi-vscode.openModelsJson", async () => {
+      const path = ensureModelsJsonExists();
+      const doc = await vscode.workspace.openTextDocument(path);
+      await vscode.window.showTextDocument(doc);
+    }),
     vscode.window.registerWebviewViewProvider(
       "pi-vscode.sessions",
-      createSessionsViewProvider(extensionUri, bridgeConfig),
+      createSessionsViewProvider(extensionUri, bridgeConfig, sessions),
     ),
     vscode.window.registerWebviewViewProvider("pi-vscode.models", createModelsViewProvider()),
     vscode.window.registerWebviewViewProvider("pi-vscode.settings", createSettingsViewProvider()),

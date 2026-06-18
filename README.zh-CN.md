@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="assets/icon.png" alt="Pi VSCode Logo" width="120" height="120">
+<img src="https://github.com/user-attachments/assets/7cb43959-bb66-4dda-a0ab-f6706412ba72" alt="Pi VSCode Logo" width="120" height="120">
 
-# Pi Agent for VS Code
+# Pi Agent Studio
 
-**面向 [pi coding agent](https://pi.dev/) 的极简 VS Code 扩展 —— 终端 TUI、会话管理、模型配置与 IDE 桥接** 🔥
+**面向 [pi coding agent](https://pi.dev/) 的 VS Code 扩展 —— 原生终端 TUI + 可视化管理侧栏（会话、模型、设置）** 🔥
 
 [English](README.md) | 简体中文
 
@@ -17,16 +17,15 @@
 
 ## 特性
 
-- **终端原生** —— 将 pi 作为集成终端打开，完整支持 TUI / PTY，自动并排于编辑器旁
+- **原生终端 TUI** —— Pi 运行在 VS Code 集成终端（PTY）中，不是 webview GUI 包装器。无 shell 层、无引号黑魔法——pi 二进制直接启动
 - **VS Code 桥接** —— 内置 pi 扩展与本地 HTTP 桥接服务，为状态栏与 Slash 命令提供实时编辑器数据
 - **实时 VS Code 状态栏** —— pi 终端底部状态条实时显示当前文件、光标 / 选区、语言、未保存标记和诊断数量
 - **诊断工具** —— Agent 可通过 `vscode_get_diagnostics` 按需读取 VS Code 诊断（LSP / lint / 类型错误）
 - **Slash 命令** —— `/vscode-selection` 与 `/vscode-diagnostics` 将当前选区或诊断以用户消息的形式注入对话；其余编辑器能力刻意不对模型开放
 - **会话恢复** —— 按工作区持久化 pi 会话，IDE 重启后通过 `--session` 自动续接
-- **侧边栏视图** —— `Sessions`、`Models`（Providers / OAuth / API Keys）与 `Settings`（环境信息、系统提示覆盖 / 追加），均为 webview 实现，直接读写 `~/.pi/agent/*.json`
+- **侧边栏视图** —— 可视化管理面板：`Sessions`（新建/恢复/切换会话）、`Models`（Providers / OAuth / API Keys）与 `Settings`（环境信息、系统提示覆盖/追加），均为 webview 实现，直接读写 `~/.pi/agent/*.json`
 - **编辑器标题栏按钮** —— 编辑器标题栏快捷打开 pi
 - **自动检测 pi 二进制** —— 自动从常见路径定位（`~/.bun/bin`、`~/.local/bin`、`~/.npm-global/bin`；Windows 上额外探测 `%APPDATA%/npm`、`%LOCALAPPDATA%/pnpm`）
-- **跨平台 Shell 处理** —— 根据 pi 二进制路径自动选择 shell（bash / PowerShell / cmd），原生支持 Windows 下 nvm4w + git-bash 组合
 
 ## 环境要求
 
@@ -58,11 +57,13 @@ ovsx get johnny-zhao/pi-vscode
 
 ## 命令
 
-| 命令                     | 快捷键        | 说明                                                               |
-| ------------------------ | ------------- | ------------------------------------------------------------------ |
-| `Pi: Open`               | `Alt+Shift+P` | 在编辑器旁打开或聚焦 pi 终端                                       |
-| `Pi: Open in New Window` | —             | 打开 pi 终端并将其移动到新窗口                                     |
-| `Pi: Upgrade Pi`         | —             | 推断 pi 所用包管理器并升级 pi 全局安装（**不会**执行 `pi update`） |
+| 命令                     | 快捷键        | 说明                                                                         |
+| ------------------------ | ------------- | ---------------------------------------------------------------------------- |
+| `Pi: Open`               | `Alt+Shift+P` | 在编辑器旁打开或聚焦 pi 终端                                                 |
+| `Pi: Open in New Window` | —             | 打开 pi 终端并将其移动到新窗口                                               |
+| `Pi: Upgrade Pi`         | —             | 推断 pi 所用包管理器并升级 pi 全局安装（**不会**执行 `pi update`）           |
+| `Pi: Open settings.json` | —             | 在编辑器中打开 `~/.pi/agent/settings.json`（不存在时创建 `{}`）              |
+| `Pi: Open models.json`   | —             | 在编辑器中打开 `~/.pi/agent/models.json`（不存在时创建 `{ providers: {} }`） |
 
 **Pi: Open** 命令同时绑定在编辑器标题栏上，可一键打开。
 
@@ -128,19 +129,6 @@ ovsx get johnny-zhao/pi-vscode
 | `pi-vscode.path` | `string` | `""`   | pi 二进制的绝对路径（留空则自动检测）                    |
 | `pi-vscode.env`  | `object` | `{}`   | 合并到 pi 终端的环境变量（与桥接变量冲突时桥接变量优先） |
 | `pi-vscode.args` | `array`  | `[]`   | 追加到 `--extension` 之后、调用方额外参数之前的 CLI 参数 |
-
-### Windows / Shell 说明
-
-Shell 选择由 **pi 二进制路径驱动**，不可配置 —— 扩展会根据 pi 文件扩展名自动匹配 shell，确保 `exec` / 引号规则始终一致：
-
-| pi 二进制（Windows）           | 使用的 Shell                                                         |
-| ------------------------------ | -------------------------------------------------------------------- |
-| `pi.ps1`                       | `powershell`（`-NoLogo -NoProfile -ExecutionPolicy Bypass`）         |
-| `pi.cmd` / `pi.bat` / `pi.exe` | `%ComSpec%`（`cmd /d /c`）                                           |
-| `pi`（无扩展名，例如 nvm4w）   | Git for Windows 的 `bash.exe`（`%ProgramFiles%\Git\bin` 等优先探测） |
-| Unix（全部）                   | `$SHELL` 或 `/bin/bash`（交互式登录：`-i -l -c`）                    |
-
-如果你用 nvm4w / npm POSIX shim，请将 `pi-vscode.path` 指向 **无扩展名** 的 bash shim（例如 `C:\nvm4w\nodejs\pi`）；解析器会原样保留该路径，shell 层会自动选择 git-bash。仅当配置路径不存在时，解析器才会按 `.exe` → `.cmd` → `.ps1` 顺序自动探测变体。
 
 ## 从源码构建
 

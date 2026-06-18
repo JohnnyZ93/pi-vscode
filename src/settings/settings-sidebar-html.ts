@@ -7,7 +7,7 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
 .header { padding:8px; display:flex; align-items:center; gap:6px; flex-shrink:0; border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent)); }
 .header strong { font-size:12px; white-space:nowrap; flex:1; min-width:0; }
 .header-actions { display:flex; gap:2px; flex-shrink:0; }
-.header button { padding:2px 2px; cursor:pointer; background:transparent; color:var(--vscode-foreground); border:1px solid var(--vscode-widget-border,transparent); border-radius:3px; font-size:11px; opacity:0.7; white-space:nowrap; }
+.header button { padding:2px 4px; cursor:pointer; background:transparent; color:var(--vscode-foreground); border:1px solid var(--vscode-widget-border,transparent); border-radius:3px; font-size:12px; opacity:0.7; white-space:nowrap; }
 .header button:hover { opacity:1; }
 .scroll { flex:1; overflow-y:auto; }
 .section { padding:10px 12px; border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent)); }
@@ -220,7 +220,7 @@ function applyData(msg) {
   piPath = env.piPath || '';
   setText('env-pi-path', piPath || '(unknown)', !piPath);
   setText('env-ext-version', env.extensionVersion || '(unknown)', false);
-  setText('env-node-version', env.nodeVersion || '(unknown)', false);
+  setText('env-node-version', env.nodeVersion || '(loading…)', env.nodeVersion === '(loading…)');
   if (env.piVersion !== undefined) {
     var loading = env.piVersion === '(loading…)';
     setText('env-pi-version', env.piVersion || '(unknown)', loading);
@@ -261,6 +261,8 @@ window.addEventListener('message', function(e) {
     applyData(msg);
   } else if (msg.type === 'piVersion') {
     setText('env-pi-version', msg.piVersion || '(unknown)', false);
+  } else if (msg.type === 'nodeVersion') {
+    setText('env-node-version', msg.nodeVersion || '(unknown)', false);
   } else if (msg.type === 'error') {
     showError(msg.message || 'Unknown error');
   } else if (msg.type === 'saved') {

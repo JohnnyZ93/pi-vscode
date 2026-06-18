@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to **Pi Agent for VS Code** are documented in this file.
+All notable changes to **Pi Agent Studio** are documented in this file.
 
 ## [1.0.0] - 2026-06-18
 

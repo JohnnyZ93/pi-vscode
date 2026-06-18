@@ -5,6 +5,7 @@ import * as vscode from "vscode";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
 import type { SessionInfo } from "@earendil-works/pi-coding-agent";
 import { createNewTerminal } from "../terminal.ts";
+import type { SessionTracker } from "../sessions.ts";
 import { getSessionsHtml } from "./sessions-sidebar-html.ts";
 
 export interface WorkspaceOption {
@@ -15,6 +16,7 @@ export interface WorkspaceOption {
 export function createSessionsViewProvider(
   extensionUri: vscode.Uri,
   bridgeConfig: { url: string; token: string } | undefined,
+  sessionTracker: SessionTracker,
 ): vscode.WebviewViewProvider {
   let selectedWorkspace: string | undefined;
 
@@ -102,8 +104,11 @@ export function createSessionsViewProvider(
             selectedWorkspace = msg.fsPath;
             await postSessions();
             break;
+          case "new":
+            await vscode.commands.executeCommand("pi-vscode.open");
+            break;
           case "open":
-            await openSession(msg.sessionFile, extensionUri, bridgeConfig);
+            await openSession(msg.sessionFile, extensionUri, bridgeConfig, sessionTracker);
             break;
           case "rename":
             await renameSession(msg.sessionFile, msg.name);
@@ -133,7 +138,13 @@ async function openSession(
   sessionFile: string,
   extensionUri: vscode.Uri,
   bridgeConfig: { url: string; token: string } | undefined,
+  sessionTracker: SessionTracker,
 ): Promise<void> {
+  const existing = sessionTracker.findTerminalBySessionFile(sessionFile);
+  if (existing) {
+    existing.show();
+    return;
+  }
   const terminalId = randomUUID();
   const terminal = await createNewTerminal({
     extensionUri,
@@ -141,7 +152,11 @@ async function openSession(
     sessionFile,
     terminalId,
   });
-  if (terminal) terminal.show();
+  if (terminal) {
+    sessionTracker.track(terminal, terminalId);
+    sessionTracker.update(terminalId, sessionFile);
+    terminal.show();
+  }
 }
 
 async function renameSession(sessionFile: string, name: string): Promise<void> {

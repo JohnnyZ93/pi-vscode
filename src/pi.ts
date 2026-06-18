@@ -27,7 +27,6 @@ export function findPiBinary(): string {
 
 export async function ensurePiBinary(): Promise<string | undefined> {
   const piPath = findPiBinary();
-  console.log(piPath);
 
   if (piExistsCache === undefined) {
     try {

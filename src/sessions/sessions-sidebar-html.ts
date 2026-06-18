@@ -7,8 +7,9 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
 .header { padding:8px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent)); gap:6px; }
 .header strong { font-size:12px; white-space:nowrap; }
 .header select { flex:1; min-width:0; background:var(--vscode-dropdown-background); color:var(--vscode-dropdown-foreground); border:1px solid var(--vscode-dropdown-border); border-radius:3px; font-size:12px; padding:2px 4px; font-family:inherit; outline:none; }
-.header button { padding:2px 2px; cursor:pointer; background:transparent; color:var(--vscode-foreground); border:1px solid var(--vscode-widget-border,transparent); border-radius:3px; font-size:11px; opacity:0.7; white-space:nowrap; }
+.header button { padding:2px 4px; cursor:pointer; background:transparent; color:var(--vscode-foreground); border:1px solid var(--vscode-widget-border,transparent); border-radius:3px; font-size:12px; opacity:0.7; white-space:nowrap; }
 .header button:hover { opacity:1; }
+.header .header-actions { display:flex; gap:4px; flex-shrink:0; }
 .list { flex:1; overflow-y:auto; padding:4px 0; }
 .session-item { padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent)); position:relative; }
 .session-item:hover { background:var(--vscode-list-hoverBackground); }
@@ -31,7 +32,10 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
 <body>
 <div class="header" id="header">
   <strong>Sessions</strong>
-  <button data-action="refresh" title="Refresh">↻</button>
+  <span class="header-actions">
+    <button data-action="new" title="New Session">+</button>
+    <button data-action="refresh" title="Refresh">↻</button>
+  </span>
 </div>
 <div id="list" class="list"><div class="empty">Loading...</div></div>
 <script>
@@ -42,6 +46,7 @@ let workspaces = [];
 let selectedWorkspace = null;
 
 function refresh() { vscode.postMessage({ type: 'refresh' }); }
+function newSession() { vscode.postMessage({ type: 'new' }); }
 function openSession(file) { vscode.postMessage({ type: 'open', sessionFile: file }); }
 
 function onWorkspaceChange() {
@@ -51,14 +56,15 @@ function onWorkspaceChange() {
 
 function updateHeader() {
   const header = document.getElementById('header');
+  var actions = '<span class="header-actions"><button data-action="new" title="New Session">+</button> <button data-action="refresh" title="Refresh">↻</button></span>';
   if (workspaces.length <= 1) {
     const name = workspaces.length === 1 ? workspaces[0].name : 'Sessions';
-    header.innerHTML = '<strong>' + escHtml(name) + '</strong> <button data-action="refresh" title="Refresh">↻</button>';
+    header.innerHTML = '<strong>' + escHtml(name) + '</strong> ' + actions;
   } else {
     let opts = workspaces.map(function(w) {
       return '<option value="' + escAttr(w.fsPath) + '"' + (w.fsPath === selectedWorkspace ? ' selected' : '') + '>' + escHtml(w.name) + '</option>';
     }).join('');
-    header.innerHTML = '<select id="workspace-select">' + opts + '</select> <button data-action="refresh" title="Refresh">↻</button>';
+    header.innerHTML = '<select id="workspace-select">' + opts + '</select> ' + actions;
     var sel = document.getElementById('workspace-select');
     if (sel) sel.addEventListener('change', onWorkspaceChange);
   }
@@ -164,6 +170,10 @@ document.addEventListener('click', function(ev) {
     case 'refresh':
       ev.stopPropagation();
       refresh();
+      break;
+    case 'new':
+      ev.stopPropagation();
+      newSession();
       break;
     case 'open':
       if (target.closest('button')) return;

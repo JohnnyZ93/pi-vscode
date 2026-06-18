@@ -1,6 +1,4 @@
 import * as vscode from "vscode";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname } from "node:path";
 import {
   readModelsJson,
   writeModelsJson,
@@ -12,6 +10,7 @@ import {
   updateModel,
   deleteModel,
   getModelsPath,
+  ensureModelsJsonExists,
   type ModelsJson,
   type ProviderEntry,
 } from "./models-config.ts";
@@ -82,12 +81,7 @@ export function createModelsViewProvider(): vscode.WebviewViewProvider {
         try {
           switch (msg.type) {
             case "openModelsFile": {
-              const modelsPath = getModelsPath();
-              if (!existsSync(modelsPath)) {
-                const dir = dirname(modelsPath);
-                if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-                writeFileSync(modelsPath, JSON.stringify({ providers: {} }, null, 2), "utf8");
-              }
+              const modelsPath = ensureModelsJsonExists();
               const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(modelsPath));
               await vscode.window.showTextDocument(doc, { preview: false });
               break;
