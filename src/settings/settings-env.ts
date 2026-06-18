@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import * as vscode from "vscode";
 import { findPiBinary } from "../pi.ts";
+import { buildPiCommand, buildShellArgsNonInteractive, resolveShellForPi } from "../shell.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -42,7 +43,10 @@ export function collectStaticEnv(): SettingsStaticEnv {
  */
 export async function detectPiVersion(piPath: string): Promise<string> {
   try {
-    const { stdout } = await execFileAsync(piPath, ["--version"], {
+    const shell = resolveShellForPi(piPath);
+    const command = buildPiCommand(shell.kind, piPath, ["--version"]);
+    const args = buildShellArgsNonInteractive(shell.kind, command);
+    const { stdout } = await execFileAsync(shell.path, args, {
       timeout: 5000,
       windowsHide: true,
     });

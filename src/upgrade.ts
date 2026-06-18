@@ -41,18 +41,17 @@ export function guessPiPackageManager(piPath: string): PiPackageManager | undefi
   return undefined;
 }
 
+// Pi does not require install scripts for normal npm installs.
 export function createPiGlobalInstallCommand(manager: PiPackageManager): string {
-  const pkg = `${PI_PACKAGE_NAME}@latest`;
   switch (manager) {
     case "bun":
-      return `bun install --global ${pkg}`;
+      return `bun add -g --ignore-scripts ${PI_PACKAGE_NAME}`;
     case "npm":
-      // Pi does not require install scripts for normal npm installs.
-      return `npm install --global --ignore-scripts ${pkg}`;
+      return `npm install -g --ignore-scripts ${PI_PACKAGE_NAME}`;
     case "pnpm":
-      return `pnpm add --global ${pkg}`;
+      return `pnpm add -g --ignore-scripts ${PI_PACKAGE_NAME}`;
     case "yarn":
-      return `yarn global add ${pkg}`;
+      return `yarn global add --ignore-scripts ${PI_PACKAGE_NAME}`;
   }
 }
 

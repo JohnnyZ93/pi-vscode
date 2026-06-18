@@ -102,4 +102,3 @@ export function createPiEnvironment(
     PI_VSCODE_BRIDGE_TOKEN: bridgeConfig.token,
   };
 }
-
