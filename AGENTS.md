@@ -12,12 +12,12 @@
 ## Source Files
 
 - `src/packages.ts` — Packages sidebar view with npm registry search and pi package install/uninstall. Uses `shell: true` on Windows to handle npm `.cmd` shims
-- `src/pi/sessions-sidebar.ts` — Sessions sidebar webview provider (list, open, rename, delete sessions)
-- `src/pi/models-sidebar.ts` — Models sidebar webview provider (custom providers, OAuth, API keys)
-- `src/pi/models-sidebar-html.ts` — HTML template for Models sidebar UI
-- `src/pi/models-config.ts` — Pure Node.js models.json CRUD (bypasses pi SDK shell dependency)
-- `src/pi/auth-config.ts` — Pure Node.js auth.json CRUD (bypasses pi SDK shell dependency on Windows)
-- `src/pi/oauth-flow.ts` — OAuth login flow controller
+- `src/sessions/sessions-sidebar.ts` — Sessions sidebar webview provider (list, open, rename, delete sessions)
+- `src/models/models-sidebar.ts` — Models sidebar webview provider (custom providers, OAuth, API keys)
+- `src/models/models-sidebar-html.ts` — HTML template for Models sidebar UI
+- `src/models/models-config.ts` — Pure Node.js models.json CRUD (bypasses pi SDK shell dependency)
+- `src/models/auth-config.ts` — Pure Node.js auth.json CRUD (bypasses pi SDK shell dependency on Windows)
+- `src/models/oauth-flow.ts` — OAuth login flow controller mirroring pi-web's `app/api/auth/login/[provider]/route.ts`: drives `AuthStorage.login()` with a shared memoized "manual input" request so `onAuth` / `onPrompt` / `onManualCodeInput` resolve the same promise (single token surfaced to the webview), and lets `AuthStorage.login()` itself persist OAuth credentials to `auth.json` (do NOT write a placeholder credential afterwards — that corrupts the SDK-managed entry)
 - `src/extension.ts` — Thin activation/wiring layer for commands, status bar, terminal profile, chat participant, and bridge lifecycle
 - `src/pi.ts` — Pi binary resolution, install prompt, launch args, bridge env helpers
 - `src/terminal.ts` — Terminal creation, terminal placement, open-with-file context helpers
@@ -80,6 +80,7 @@ See [.agents/docs/icons.md](.agents/docs/icons.md)
 - Every pi launch injects `PI_VSCODE_BRIDGE_URL`, `PI_VSCODE_BRIDGE_TOKEN`, and a per-terminal `PI_VSCODE_TERMINAL_ID` plus `--extension bridge/pi-vscode-bridge.js`
 - On `session_start`, the pi bridge reports `{terminalId, sessionFile}` via the `reportTerminalSession` RPC; VS Code stores the map in `workspaceState` under `pi-vscode.terminalSessions` and, on next activation, recreates each terminal with `--session <sessionFile>` so prior pi conversations resume across IDE reloads. Terminals closed explicitly (non-`Shutdown` exit reason) are removed from the map; entries whose session file no longer exists on disk are pruned on activation
 - **Sessions and Models sidebar views** — Webview-based sidebar panels for managing pi sessions and model configurations. The Models view includes custom provider CRUD, OAuth login, and API key management. Implemented with pure Node.js file I/O to avoid pi SDK's shell-dependent APIs that cause `EINVAL` errors on Windows when bash is not available
+- Models Providers tab uses event delegation with `data-action`/`data-id` attributes (no inline `onclick` string concatenation, which previously broke when provider/model ids contained dashes or quotes). Provider rows expose hover Edit and Delete buttons (mirroring the Sessions UI); both clicking the row and the Edit button toggle the same inline detail panel containing Name (rename), Base URL, API Key, and API protocol fields plus an inline Models list with hover edit/delete affordance and inline confirm bars (no native `confirm()` for deletes). Saving a provider with a changed Name issues a combined `renameProviderAndUpdate` message so the rename and field updates apply atomically. Empty-string fields are sent as `null` and the extension converts them to `undefined` so JSON.stringify drops them on disk. Model add/edit form mirrors pi-web (Image input checkbox, full Cost grid with cacheRead/cacheWrite). The header has an Open button (📝) that opens `~/.pi/agent/models.json` in the active editor (creating an empty file when missing) plus a Refresh button. Add/Edit forms close automatically when the extension echoes back fresh `data` after a successful mutation
 - The bundled pi bridge extension refreshes a `ctx.ui.setStatus("pi-vscode", ...)` footer entry every 1.5 seconds so the bottom of pi's TUI reflects the current VS Code editor context
 - Bridge tool coverage currently includes: current selection, latest cached selection, diagnostics, open editors, workspace folders, aggregate editor state, opening files in VS Code, dirty/save state, document symbols, definitions, type definitions, implementations, declarations, hover info, workspace symbol search, references, code actions, executing code actions, applying workspace edits, document/range formatting through VS Code providers, buffered IDE notifications, and showing VS Code info/warning/error notifications
 - Formatting bridge methods (`formatDocument`, `formatRange`) call `vscode.executeFormatDocumentProvider` / `vscode.executeFormatRangeProvider`, convert the returned `TextEdit[]` into a `WorkspaceEdit`, and apply it with `workspace.applyEdit`

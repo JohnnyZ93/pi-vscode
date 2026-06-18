@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 import {
   readModelsJson,
   writeModelsJson,
@@ -11,6 +13,7 @@ import {
   deleteModel,
   getModelsPath,
   type ModelsJson,
+  type ProviderEntry,
 } from "./models-config.ts";
 import { startOAuthFlow, type OAuthProgressEvent, type OAuthFlowController } from "./oauth-flow.ts";
 import {
@@ -78,6 +81,17 @@ export function createModelsViewProvider(): vscode.WebviewViewProvider {
         }
         try {
           switch (msg.type) {
+            case "openModelsFile": {
+              const modelsPath = getModelsPath();
+              if (!existsSync(modelsPath)) {
+                const dir = dirname(modelsPath);
+                if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+                writeFileSync(modelsPath, JSON.stringify({ providers: {} }, null, 2), "utf8");
+              }
+              const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(modelsPath));
+              await vscode.window.showTextDocument(doc, { preview: false });
+              break;
+            }
             case "refresh":
               postData();
               break;
@@ -86,13 +100,22 @@ export function createModelsViewProvider(): vscode.WebviewViewProvider {
               postData();
               break;
             case "updateProvider":
-              updateProvider(msg.name, msg.updates);
+              updateProvider(msg.name, sanitizeUpdates(msg.updates));
               postData();
               break;
             case "renameProvider":
               renameProvider(msg.oldName, msg.newName);
               postData();
               break;
+            case "renameProviderAndUpdate": {
+              // Update fields first (against old name), then rename atomically.
+              updateProvider(msg.oldName, sanitizeUpdates(msg.updates));
+              if (msg.oldName !== msg.newName) {
+                renameProvider(msg.oldName, msg.newName);
+              }
+              postData();
+              break;
+            }
             case "deleteProvider":
               deleteProvider(msg.name);
               postData();
@@ -102,7 +125,7 @@ export function createModelsViewProvider(): vscode.WebviewViewProvider {
               postData();
               break;
             case "updateModel":
-              updateModel(msg.providerName, msg.modelId, msg.updates);
+              updateModel(msg.providerName, msg.modelId, sanitizeModelUpdates(msg.updates));
               postData();
               break;
             case "deleteModel":
@@ -163,6 +186,32 @@ export function createModelsViewProvider(): vscode.WebviewViewProvider {
   };
 }
 
+/**
+ * Convert webview's null sentinels to undefined so that the spread merge in
+ * updateProvider effectively removes those fields when JSON.stringify drops them.
+ */
+function sanitizeUpdates(updates: Partial<ProviderEntry> | undefined): Partial<ProviderEntry> {
+  if (!updates) return {};
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(updates)) {
+    result[key] = value === null ? undefined : value;
+  }
+  return result as Partial<ProviderEntry>;
+}
+
+/**
+ * Same null → undefined conversion for model updates so unchecking e.g. "Image input"
+ * actually drops the `input` field instead of preserving the old one via spread merge.
+ */
+function sanitizeModelUpdates<T extends Record<string, unknown>>(updates: T | undefined): T {
+  if (!updates) return {} as T;
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(updates)) {
+    result[key] = value === null ? undefined : value;
+  }
+  return result as T;
+}
+
 function buildModelsViewData(): ModelsViewData {
   try {
     const modelsJson = readModelsJson();
@@ -185,12 +234,9 @@ function buildModelsViewData(): ModelsViewData {
     const oauthStatuses = getOAuthProviderStatuses();
     console.log("[pi-vscode] Models view: OAuth providers:", oauthStatuses.length);
 
-    // API key providers - count models from models.json overrides + default 1 per provider
-    const apikeyStatuses = getApiKeyProviderStatuses().map((p) => {
-      const customModels = modelsJson.providers?.[p.id]?.models ?? [];
-      const modelCount = customModels.length > 0 ? customModels.length : 1;
-      return { ...p, modelCount };
-    });
+    // API key providers - modelCount already returned by getApiKeyProviderStatuses
+    // (computed from the SDK registry, same as pi-web).
+    const apikeyStatuses = getApiKeyProviderStatuses();
 
     console.log("[pi-vscode] Models view: API key providers:", apikeyStatuses.length);
 

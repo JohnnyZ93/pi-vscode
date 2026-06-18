@@ -1,39 +1,25 @@
 /**
  * Pure Node.js implementation of auth storage.
- * Bypasses pi SDK's AuthStorage which requires shell on Windows.
+ * Bypasses pi SDK's AuthStorage file-locking (heavy on Windows), but reuses the
+ * SDK to enumerate built-in providers so the list stays in sync with the SDK —
+ * same approach as pi-web (see app/api/auth/all-providers/route.ts).
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { homedir } from "node:os";
+import { AuthStorage, ModelRegistry, getAgentDir } from "@earendil-works/pi-coding-agent";
 
-// Built-in OAuth providers (from pi-ai SDK)
-const OAUTH_PROVIDERS: Array<{ id: string; name: string }> = [
-  { id: "github_copilot", name: "GitHub Copilot" },
-  { id: "google", name: "Google" },
-  { id: "openai", name: "OpenAI" },
-  { id: "azure_openai", name: "Azure OpenAI" },
-];
+// Providers that authenticate via OAuth — excluded from the API Keys tab.
+// Mirrors pi-web's app/api/auth/all-providers/route.ts.
+const OAUTH_PROVIDER_IDS = new Set(["anthropic", "github-copilot", "openai-codex"]);
 
-// Built-in API key providers with display names (from pi-coding-agent)
-const API_KEY_PROVIDERS: Array<{ id: string; name: string }> = [
-  { id: "anthropic", name: "Anthropic" },
-  { id: "openai", name: "OpenAI" },
-  { id: "google", name: "Google Gemini" },
-  { id: "groq", name: "Groq" },
-  { id: "deepseek", name: "DeepSeek" },
-  { id: "mistral", name: "Mistral" },
-  { id: "together", name: "Together AI" },
-  { id: "fireworks", name: "Fireworks" },
-  { id: "openrouter", name: "OpenRouter" },
-  { id: "cerebras", name: "Cerebras" },
-  { id: "azure-openai-responses", name: "Azure OpenAI Responses" },
-  { id: "xai", name: "xAI" },
-  { id: "amazon-bedrock", name: "Amazon Bedrock" },
-  { id: "google-vertex", name: "Google Vertex AI" },
-  { id: "huggingface", name: "Hugging Face" },
-  { id: "nvidia", name: "NVIDIA NIM" },
-  { id: "cloudflare-ai-gateway", name: "Cloudflare AI Gateway" },
-];
+// OAuth providers we deliberately hide from the OAuth tab. Mirrors pi-web's
+// app/api/auth/providers/route.ts EXCLUDED set.
+const OAUTH_HIDDEN: Set<string> = new Set(["anthropic"]);
+// Display name overrides for the OAuth tab (mirrors pi-web).
+const OAUTH_DISPLAY_NAMES: Record<string, string> = {
+  "openai-codex": "ChatGPT Plus/Pro",
+  "github-copilot": "GitHub Copilot",
+};
 
 interface AuthEntry {
   type: "oauth" | "api_key";
@@ -51,7 +37,9 @@ interface AuthJson {
 }
 
 function getAuthPath(): string {
-  return join(homedir(), ".pi", "auth.json");
+  // Must match the SDK's AuthStorage default: ~/.pi/agent/auth.json.
+  // Writing elsewhere means pi never sees keys saved via this webview.
+  return join(getAgentDir(), "auth.json");
 }
 
 function ensureDir(path: string): void {
@@ -84,9 +72,15 @@ function writeAuthJson(data: AuthJson): void {
   writeFileSync(path, JSON.stringify(data, null, 2), "utf8");
 }
 
-// OAuth providers list
-export function getOAuthProviders(): Array<{ id: string; name: string }> {
-  return [...OAUTH_PROVIDERS];
+/**
+ * Build a ModelRegistry backed by our pure-Node auth reader, so the provider
+ * list reflects both built-in models and user models.json overrides. The
+ * registry is constructed per call (cheap) so changes are always fresh.
+ */
+function buildRegistry(): ModelRegistry {
+  // AuthStorage.create() only reads auth.json + env vars lazily; it does not
+  // spawn a shell, so it is safe on Windows.
+  return ModelRegistry.create(AuthStorage.create());
 }
 
 // Check if provider has auth
@@ -168,48 +162,97 @@ export function removeApiKey(providerId: string): void {
   writeAuthJson(auth);
 }
 
+/**
+ * OAuth providers, sourced from the SDK. Mirrors pi-web's
+ * /api/auth/providers list (same exclusions + display name overrides).
+ */
+export function getOAuthProviders(): Array<{ id: string; name: string }> {
+  const authStorage = AuthStorage.create();
+  return authStorage
+    .getOAuthProviders()
+    .filter((p) => !OAUTH_HIDDEN.has(p.id))
+    .map((p) => ({ id: p.id, name: OAUTH_DISPLAY_NAMES[p.id] ?? p.name }));
+}
+
 // Get OAuth provider statuses
 export function getOAuthProviderStatuses(): Array<{
   id: string;
   name: string;
   connected: boolean;
 }> {
-  const providers = getOAuthProviders();
-  return providers.map((p) => ({
-    id: p.id,
-    name: p.name,
-    connected: hasAuth(p.id),
-  }));
+  const authStorage = AuthStorage.create();
+  return authStorage
+    .getOAuthProviders()
+    .filter((p) => !OAUTH_HIDDEN.has(p.id))
+    .map((p) => ({
+      id: p.id,
+      name: OAUTH_DISPLAY_NAMES[p.id] ?? p.name,
+      connected: authStorage.has(p.id),
+    }));
 }
 
-// Get API key provider statuses
+/**
+ * API key providers, sourced from the SDK registry. Mirrors pi-web's
+ * /api/auth/all-providers: iterate all models, dedupe by provider, skip
+ * OAuth-only providers and custom (models.json_key) providers.
+ */
 export function getApiKeyProviderStatuses(): Array<{
   id: string;
   name: string;
   configured: boolean;
+  modelCount: number;
 }> {
-  return API_KEY_PROVIDERS.map((p) => ({
-    id: p.id,
-    name: p.name,
-    configured: hasAuth(p.id),
-  }));
+  try {
+    const registry = buildRegistry();
+    const all = registry.getAll();
+    const seen = new Set<string>();
+    const result: Array<{
+      id: string;
+      name: string;
+      configured: boolean;
+      modelCount: number;
+    }> = [];
+
+    for (const m of all) {
+      if (seen.has(m.provider)) continue;
+      seen.add(m.provider);
+      if (OAUTH_PROVIDER_IDS.has(m.provider)) continue;
+      const status = registry.getProviderAuthStatus(m.provider);
+      // Skip providers whose key comes from models.json (those are custom providers).
+      if (status.source === "models_json_key") continue;
+      const modelCount = all.filter((x) => x.provider === m.provider).length;
+      result.push({
+        id: m.provider,
+        name: registry.getProviderDisplayName(m.provider),
+        configured: status.configured,
+        modelCount,
+      });
+    }
+
+    return result;
+  } catch (err) {
+    console.error("[pi-vscode] getApiKeyProviderStatuses failed:", err);
+    return [];
+  }
 }
 
 // Get display name for a provider
 export function getProviderDisplayName(providerId: string): string {
-  const oauth = OAUTH_PROVIDERS.find((p) => p.id === providerId);
+  const oauth = getOAuthProviders().find((p) => p.id === providerId);
   if (oauth) return oauth.name;
-  const apiKey = API_KEY_PROVIDERS.find((p) => p.id === providerId);
-  if (apiKey) return apiKey.name;
-  return providerId;
+  try {
+    return buildRegistry().getProviderDisplayName(providerId);
+  } catch {
+    return providerId;
+  }
 }
 
 // Check if provider is an OAuth provider
 export function isOAuthProvider(providerId: string): boolean {
-  return OAUTH_PROVIDERS.some((p) => p.id === providerId);
+  return getOAuthProviders().some((p) => p.id === providerId);
 }
 
 // Check if provider is an API key provider
 export function isApiKeyProvider(providerId: string): boolean {
-  return API_KEY_PROVIDERS.some((p) => p.id === providerId);
+  return getApiKeyProviderStatuses().some((p) => p.id === providerId);
 }
