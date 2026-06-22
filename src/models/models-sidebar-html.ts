@@ -25,7 +25,7 @@ body{height:100%;margin:0;padding:0;font-family:var(--vscode-font-family);font-s
 .provider-item:hover .provider-actions{opacity:1}
 .provider-actions button{padding:2px 6px;cursor:pointer;background:transparent;border:1px solid var(--vscode-widget-border,transparent);border-radius:3px;font-size:11px;color:var(--vscode-foreground)}
 .provider-actions button:hover{background:var(--vscode-toolbar-hoverBackground)}
-.provider-actions button.danger:hover{background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:#fff;border-color:transparent}
+.provider-actions button.danger:hover{background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:var(--pi-error-text);border-color:transparent}
 .status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .status-dot.on{background:#4caf50}
 .status-dot.off{background:#9e9e9e}
@@ -39,7 +39,7 @@ body{height:100%;margin:0;padding:0;font-family:var(--vscode-font-family);font-s
 .btn{padding:4px 12px;cursor:pointer;border:none;border-radius:3px;font-size:12px}
 .btn-primary{background:var(--vscode-button-background);color:var(--vscode-button-foreground)}
 .btn-primary:hover{background:var(--vscode-button-hoverBackground)}
-.btn-danger{background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:#fff}
+.btn-danger{background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:var(--pi-error-text)}
 .btn-danger:hover{opacity:.9}
 .btn-secondary{background:var(--vscode-button-secondaryBackground);color:var(--vscode-button-secondaryForeground)}
 .btn-secondary:hover{background:var(--vscode-button-secondaryHoverBackground)}
@@ -55,7 +55,7 @@ body{height:100%;margin:0;padding:0;font-family:var(--vscode-font-family);font-s
 .model-item:hover .model-actions{opacity:1}
 .model-actions button{padding:2px 6px;cursor:pointer;background:transparent;border:1px solid var(--vscode-widget-border,transparent);border-radius:3px;font-size:11px;color:var(--vscode-foreground)}
 .model-actions button:hover{background:var(--vscode-toolbar-hoverBackground)}
-.model-actions button.danger:hover{background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:#fff;border-color:transparent}
+.model-actions button.danger:hover{background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:var(--pi-error-text);border-color:transparent}
 .oauth-item{padding:8px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent))}
 .oauth-item .provider-name{flex:1;padding-right:0}
 .oauth-progress{padding:10px;margin:8px;background:var(--vscode-editor-background);border:1px solid var(--vscode-widget-border,transparent);border-radius:4px}
@@ -66,16 +66,16 @@ body{height:100%;margin:0;padding:0;font-family:var(--vscode-font-family);font-s
 .apikey-item{padding:8px 10px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent))}
 .apikey-item .provider-name{flex:1;padding-right:0}
 .empty{padding:20px;text-align:center;opacity:.5;font-size:12px}
-.error-toast{padding:8px 10px;margin:8px;background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:#fff;border-radius:4px;font-size:12px;display:none}
+.error-toast{padding:8px 10px;margin:8px;background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:var(--pi-error-text);border-radius:4px;font-size:12px;display:none}
 .error-toast.show{display:block}
 .tabs{display:flex;border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent));flex-shrink:0}
 .tab{flex:1;padding:6px 8px;text-align:center;cursor:pointer;font-size:11px;opacity:.6;border-bottom:2px solid transparent}
 .tab:hover{opacity:.8}
 .tab.active{opacity:1;border-bottom-color:var(--vscode-focusBorder)}
-.delete-confirm{padding:6px 10px;background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:#fff;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.delete-confirm{padding:6px 10px;background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:var(--pi-error-text);font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .delete-confirm button{padding:2px 8px;cursor:pointer;border:none;border-radius:3px;font-size:11px}
-.delete-confirm .btn-confirm{background:rgba(255,255,255,0.2);color:#fff}
-.delete-confirm .btn-cancel{background:transparent;color:#fff;text-decoration:underline}
+.delete-confirm .btn-confirm{background:rgba(0,0,0,0.15);color:var(--pi-error-text)}
+.delete-confirm .btn-cancel{background:transparent;color:var(--pi-error-text);text-decoration:underline}
 </style></head>
 <body>
 <div class="header"><strong>Models</strong><div class="header-actions"><button id="btn-open-models-json" data-action="open-file" title="Open ${escHtml(modelsPath)}">📝</button><button data-action="refresh" title="Refresh">↻</button></div></div>

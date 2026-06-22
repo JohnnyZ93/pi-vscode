@@ -27,12 +27,12 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
 .session-item:hover .session-actions { opacity:1; }
 .session-actions button { padding:2px 6px; cursor:pointer; background:transparent; border:1px solid var(--vscode-widget-border,transparent); border-radius:3px; font-size:11px; color:var(--vscode-foreground); }
 .session-actions button:hover { background:var(--vscode-toolbar-hoverBackground); }
-.session-actions button.danger:hover { background:var(--vscode-inputValidation-errorBackground,#d32f2f); color:#fff; border-color:transparent; }
+.session-actions button.danger:hover { background:var(--vscode-inputValidation-errorBackground,#d32f2f); color:var(--pi-error-text); border-color:transparent; }
 .rename-input { width:100%; padding:2px 4px; background:var(--vscode-input-background); color:var(--vscode-input-foreground); border:1px solid var(--vscode-focusBorder); border-radius:3px; font-size:13px; font-family:inherit; outline:none; }
-.delete-confirm { padding:6px 10px; background:var(--vscode-inputValidation-errorBackground,#d32f2f); color:#fff; font-size:12px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.delete-confirm { padding:6px 10px; background:var(--vscode-inputValidation-errorBackground,#d32f2f); color:var(--pi-error-text); font-size:12px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
 .delete-confirm button { padding:2px 8px; cursor:pointer; border:none; border-radius:3px; font-size:11px; }
-.delete-confirm .btn-confirm { background:rgba(255,255,255,0.2); color:#fff; }
-.delete-confirm .btn-cancel { background:transparent; color:#fff; text-decoration:underline; }
+.delete-confirm .btn-confirm { background:rgba(0,0,0,0.15); color:var(--pi-error-text); }
+.delete-confirm .btn-cancel { background:transparent; color:var(--pi-error-text); text-decoration:underline; }
 .empty { padding:20px; text-align:center; opacity:0.5; font-size:12px; }
 </style></head>
 <body>

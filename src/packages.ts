@@ -107,8 +107,8 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
 .status { padding:20px; text-align:center; opacity:0.6; }
 .installed-item { display:flex; align-items:center; justify-content:space-between; padding:4px 0; font-size:12px; }
 .installed-item code { font-size:11px; opacity:0.9; word-break:break-all; }
-.uninstall-btn { padding:2px 8px; cursor:pointer; background:var(--vscode-inputValidation-errorBackground,#d32f2f); color:#fff; border:none; border-radius:3px; font-size:10px; }
-.uninstall-btn:hover { background:var(--vscode-inputValidation-errorBackground,#d32f2f); color:#fff; }
+.uninstall-btn { padding:2px 8px; cursor:pointer; background:var(--vscode-inputValidation-errorBackground,#d32f2f); color:var(--pi-error-text); border:none; border-radius:3px; font-size:10px; }
+.uninstall-btn:hover { background:var(--vscode-inputValidation-errorBackground,#d32f2f); color:var(--pi-error-text); }
 .pkg-labels { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:4px; }
 .pi-label { display:inline-block; padding:1px 6px; border-radius:3px; font-size:10px; font-weight:500; background:var(--vscode-badge-background); color:var(--vscode-badge-foreground); }
 .pkg-media { margin:6px 0; border-radius:4px; overflow:hidden; }
@@ -132,7 +132,7 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
 <div id="loading-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;flex-direction:column;align-items:center;justify-content:center;gap:8px;font-size:13px;color:var(--vscode-foreground)">
   <strong>Working...</strong>
   <pre id="output-log" style="max-height:200px;width:80%;overflow-y:auto;background:var(--vscode-editor-background);border:1px solid var(--vscode-widget-border,transparent);border-radius:4px;padding:6px;font-size:11px;margin:0;white-space:pre-wrap;word-break:break-all"></pre>
-  <button onclick="vscode.postMessage({type:'cancel'})" style="padding:4px 12px;cursor:pointer;background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:#fff;border:none;border-radius:4px;font-size:12px">Cancel</button>
+  <button onclick="vscode.postMessage({type:'cancel'})" style="padding:4px 12px;cursor:pointer;background:var(--vscode-inputValidation-errorBackground,#d32f2f);color:var(--pi-error-text);border:none;border-radius:4px;font-size:12px">Cancel</button>
 </div>
 <div id="list" class="pkg-list"><div class="status">Loading...</div></div>
 <div style="padding:4px 8px 8px;text-align:right;flex-shrink:0"><a href="https://pi.dev/packages" target="_blank" style="font-size:11px;color:var(--vscode-textLink-foreground);text-decoration:none;opacity:0.8">Browse packages ↗</a></div>
