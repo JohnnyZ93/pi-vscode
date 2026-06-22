@@ -79,14 +79,51 @@ export async function detectNodeVersion(piPath: string): Promise<string> {
 }
 
 /**
+ * Run a pi shim binary on Windows safely.
+ */
+function execPiShim(
+  piPath: string,
+  args: readonly string[],
+  timeoutMs: number,
+): Promise<{ stdout: string; stderr: string }> {
+  const isWin = process.platform === "win32";
+  const lower = piPath.toLowerCase();
+  const isShim =
+    isWin && (lower.endsWith(".cmd") || lower.endsWith(".bat") || lower.endsWith(".ps1"));
+
+  const opts = { timeout: timeoutMs, windowsHide: true, encoding: "utf8" as const };
+
+  if (!isShim) {
+    return execFileAsync(piPath, args, opts) as Promise<{ stdout: string; stderr: string }>;
+  }
+
+  if (lower.endsWith(".ps1")) {
+    const quoteSingle = (s: string) => `'${s.replace(/'/g, "''")}'`;
+    const ps =
+      `& ${quoteSingle(piPath)}` + (args.length ? " " + args.map(quoteSingle).join(" ") : "");
+    return execFileAsync(
+      "powershell.exe",
+      ["-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", ps],
+      opts,
+    ) as Promise<{ stdout: string; stderr: string }>;
+  }
+
+  // .cmd / .bat — go through cmd.exe explicitly with proper quoting.
+  return execFileAsync("cmd.exe", ["/d", "/s", "/c", piPath, ...args], opts) as Promise<{
+    stdout: string;
+    stderr: string;
+  }>;
+}
+
+/**
  * Detect pi version by running `pi --version` (10s timeout).
  */
 export async function detectPiVersion(piPath: string): Promise<string> {
   try {
-    const { stdout } = await execFileAsync(piPath, ["--version"], {
-      timeout: 10000,
-      windowsHide: true,
-    });
+    const { stdout, stderr } = await execPiShim(piPath, ["--version"], 10000);
+    if (stderr && stderr.trim()) {
+      console.error(`[pi-agent-studio] detectPiVersion stderr: ${stderr.trim()}`);
+    }
     const trimmed = stdout.trim();
     if (trimmed) {
       // pi --version typically prints just the version (e.g. "0.79.0") or "pi 0.79.0".
@@ -94,6 +131,8 @@ export async function detectPiVersion(piPath: string): Promise<string> {
       const last = trimmed.split(/\s+/).pop();
       if (last) return last;
     }
-  } catch {}
+  } catch (err) {
+    console.error(`[pi-agent-studio] detectPiVersion failed (piPath=${piPath}):`, err);
+  }
   return "(unknown)";
 }
