@@ -6,6 +6,7 @@ import { SessionManager } from "@earendil-works/pi-coding-agent";
 import type { SessionInfo } from "@earendil-works/pi-coding-agent";
 import { createNewTerminal } from "../terminal.ts";
 import type { SessionTracker } from "../sessions.ts";
+import { filterAndSortSessions } from "./session-search.ts";
 import { getSessionsHtml } from "./sessions-sidebar-html.ts";
 
 export interface WorkspaceOption {
@@ -32,6 +33,14 @@ export function createSessionsViewProvider(
     return folders[0]!.uri.fsPath;
   };
 
+  // Per-workspace cache of the most recent SessionManager.list() result.
+  // Search filtering happens against this in-memory cache so each keystroke
+  // doesn't re-read JSONL files from disk.
+  const sessionCache = new Map<string, SessionInfo[]>();
+  // Last search query per webview lifetime; survives refresh/rename/delete so
+  // mutations re-apply the active filter.
+  let lastSearchQuery = "";
+
   return {
     resolveWebviewView(webviewView: vscode.WebviewView) {
       webviewView.webview.options = { enableScripts: true };
@@ -54,26 +63,58 @@ export function createSessionsViewProvider(
         });
       };
 
-      const postSessions = async () => {
+      const sortByModifiedDesc = (sessions: SessionInfo[]): SessionInfo[] => {
+        return [...sessions].sort((a, b) => {
+          const am = a.modified instanceof Date ? a.modified.getTime() : 0;
+          const bm = b.modified instanceof Date ? b.modified.getTime() : 0;
+          return bm - am;
+        });
+      };
+
+      const postFiltered = (query: string) => {
+        const cwd = selectedWorkspace;
+        if (!cwd) {
+          webviewView.webview.postMessage({ type: "sessions", sessions: [], query });
+          return;
+        }
+        const cached = sessionCache.get(cwd) ?? [];
+        const trimmed = query.trim();
+        if (!trimmed) {
+          webviewView.webview.postMessage({
+            type: "sessions",
+            sessions: sortByModifiedDesc(cached).map((s) => serializeSession(s)),
+            query,
+          });
+          return;
+        }
+        // With a query, sort by relevance.
+        const { sessions: filtered, error } = filterAndSortSessions(cached, query, "relevance");
+        webviewView.webview.postMessage({
+          type: "sessions",
+          sessions: filtered.map((s) => serializeSession(s)),
+          query,
+          searchError: error,
+        });
+      };
+
+      const reloadAndPost = async (query: string) => {
         if (!selectedWorkspace) {
-          webviewView.webview.postMessage({ type: "sessions", sessions: [] });
+          webviewView.webview.postMessage({ type: "sessions", sessions: [], query });
           return;
         }
         try {
           const sessions = await SessionManager.list(selectedWorkspace);
-          webviewView.webview.postMessage({
-            type: "sessions",
-            sessions: sessions.map((s) => serializeSession(s)),
-          });
+          sessionCache.set(selectedWorkspace, sessions);
         } catch (err) {
           console.error("[pi-agent-studio] Sessions view: error fetching sessions:", err);
-          webviewView.webview.postMessage({ type: "sessions", sessions: [] });
+          sessionCache.set(selectedWorkspace, []);
         }
+        postFiltered(query);
       };
 
       const refreshAll = async () => {
         postWorkspaces();
-        await postSessions();
+        await reloadAndPost(lastSearchQuery);
       };
 
       void refreshAll();
@@ -102,7 +143,11 @@ export function createSessionsViewProvider(
             break;
           case "selectWorkspace":
             selectedWorkspace = msg.fsPath;
-            await postSessions();
+            await reloadAndPost(lastSearchQuery);
+            break;
+          case "search":
+            lastSearchQuery = typeof msg.query === "string" ? msg.query : "";
+            postFiltered(lastSearchQuery);
             break;
           case "new":
             await vscode.commands.executeCommand("pi-agent-studio.open");
@@ -112,11 +157,11 @@ export function createSessionsViewProvider(
             break;
           case "rename":
             await renameSession(msg.sessionFile, msg.name);
-            await postSessions();
+            await reloadAndPost(lastSearchQuery);
             break;
           case "delete":
             await deleteSession(msg.sessionFile);
-            await postSessions();
+            await reloadAndPost(lastSearchQuery);
             break;
         }
       });

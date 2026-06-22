@@ -10,6 +10,12 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
 .header button { padding:2px 4px; cursor:pointer; background:transparent; color:var(--vscode-foreground); border:1px solid var(--vscode-widget-border,transparent); border-radius:3px; font-size:12px; opacity:0.7; white-space:nowrap; }
 .header button:hover { opacity:1; }
 .header .header-actions { display:flex; gap:4px; flex-shrink:0; }
+.header button.search-active { opacity:1; background:var(--vscode-toolbar-hoverBackground); }
+.search-bar { padding:6px 8px; border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent)); flex-shrink:0; }
+.search-input { width:100%; padding:4px 6px; background:var(--vscode-input-background); color:var(--vscode-input-foreground); border:1px solid var(--vscode-input-border,var(--vscode-widget-border,transparent)); border-radius:3px; font-size:12px; font-family:inherit; outline:none; }
+.search-input:focus { border-color:var(--vscode-focusBorder); }
+.search-input.error { border-color:var(--vscode-inputValidation-errorBorder,#d32f2f); }
+.search-error { font-size:11px; color:var(--vscode-inputValidation-errorForeground,var(--vscode-errorForeground,#d32f2f)); margin-top:4px; word-break:break-all; }
 .list { flex:1; overflow-y:auto; padding:4px 0; }
 .session-item { padding:8px 10px; cursor:pointer; border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent)); position:relative; }
 .session-item:hover { background:var(--vscode-list-hoverBackground); }
@@ -33,9 +39,14 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
 <div class="header" id="header">
   <strong>Sessions</strong>
   <span class="header-actions">
+    <button data-action="toggle-search" title="Search Sessions">🔍</button>
     <button data-action="new" title="New Session">+</button>
     <button data-action="refresh" title="Refresh">↻</button>
   </span>
+</div>
+<div id="search-bar" class="search-bar" style="display:none">
+  <input id="search-input" class="search-input" type="text" placeholder='Search... (use "phrase" or re:pattern)' />
+  <div id="search-error" class="search-error" style="display:none"></div>
 </div>
 <div id="list" class="list"><div class="empty">Loading...</div></div>
 <script>
@@ -44,10 +55,72 @@ let deleteTarget = null;
 let sessionsData = [];
 let workspaces = [];
 let selectedWorkspace = null;
+let searchVisible = false;
+let searchQuery = '';
+let searchDebounceTimer = null;
 
 function refresh() { vscode.postMessage({ type: 'refresh' }); }
 function newSession() { vscode.postMessage({ type: 'new' }); }
 function openSession(file) { vscode.postMessage({ type: 'open', sessionFile: file }); }
+
+function sendSearch(query) {
+  vscode.postMessage({ type: 'search', query: query });
+}
+
+function scheduleSearch(query) {
+  clearTimeout(searchDebounceTimer);
+  searchQuery = query;
+  searchDebounceTimer = setTimeout(function() { sendSearch(query); }, 200);
+}
+
+function bindSearchInput() {
+  var input = document.getElementById('search-input');
+  if (!input || input.dataset.bound === '1') return;
+  input.dataset.bound = '1';
+  input.value = searchQuery;
+  input.addEventListener('input', function(ev) {
+    scheduleSearch(ev.target.value);
+  });
+  input.addEventListener('keydown', function(ev) {
+    if (ev.key === 'Escape') {
+      ev.preventDefault();
+      clearTimeout(searchDebounceTimer);
+      input.value = '';
+      searchQuery = '';
+      searchVisible = false;
+      updateSearchBarVisibility();
+      sendSearch('');
+    }
+  });
+}
+
+function updateSearchBarVisibility() {
+  var bar = document.getElementById('search-bar');
+  if (bar) bar.style.display = searchVisible ? 'block' : 'none';
+  var btn = document.querySelector('[data-action="toggle-search"]');
+  if (btn) {
+    if (searchVisible) btn.classList.add('search-active');
+    else btn.classList.remove('search-active');
+  }
+  if (searchVisible) {
+    bindSearchInput();
+    var input = document.getElementById('search-input');
+    if (input) { input.focus(); input.select(); }
+  }
+}
+
+function toggleSearch() {
+  searchVisible = !searchVisible;
+  if (!searchVisible) {
+    clearTimeout(searchDebounceTimer);
+    var hadQuery = searchQuery.length > 0;
+    searchQuery = '';
+    var input = document.getElementById('search-input');
+    if (input) input.value = '';
+    if (hadQuery) sendSearch('');
+  }
+  updateSearchBarVisibility();
+}
 
 function onWorkspaceChange() {
   selectedWorkspace = this.value;
@@ -56,7 +129,11 @@ function onWorkspaceChange() {
 
 function updateHeader() {
   const header = document.getElementById('header');
-  var actions = '<span class="header-actions"><button data-action="new" title="New Session">+</button> <button data-action="refresh" title="Refresh">↻</button></span>';
+  var actions = '<span class="header-actions">' +
+    '<button data-action="toggle-search" title="Search Sessions"' + (searchVisible ? ' class="search-active"' : '') + '>🔍</button> ' +
+    '<button data-action="new" title="New Session">+</button> ' +
+    '<button data-action="refresh" title="Refresh">↻</button>' +
+    '</span>';
   if (workspaces.length <= 1) {
     const name = workspaces.length === 1 ? workspaces[0].name : 'Sessions';
     header.innerHTML = '<strong>' + escHtml(name) + '</strong> ' + actions;
@@ -134,7 +211,13 @@ function formatTime(iso) {
 function renderAll() {
   var list = document.getElementById('list');
   if (!sessionsData.length) {
-    list.innerHTML = '<div class="empty">No sessions found</div>';
+    var emptyMsg;
+    if (searchQuery && searchQuery.trim().length > 0) {
+      emptyMsg = 'No sessions match "' + escHtml(searchQuery) + '"';
+    } else {
+      emptyMsg = 'No sessions found';
+    }
+    list.innerHTML = '<div class="empty">' + emptyMsg + '</div>';
     return;
   }
   var html = '';
@@ -175,6 +258,10 @@ document.addEventListener('click', function(ev) {
       ev.stopPropagation();
       newSession();
       break;
+    case 'toggle-search':
+      ev.stopPropagation();
+      toggleSearch();
+      break;
     case 'open':
       if (target.closest('button')) return;
       openSession(path);
@@ -203,9 +290,21 @@ window.addEventListener('message', function(e) {
     workspaces = e.data.workspaces || [];
     selectedWorkspace = e.data.selected;
     updateHeader();
+    // Re-apply visibility/active state after header re-render.
+    updateSearchBarVisibility();
   }
   if (e.data.type === 'sessions') {
     sessionsData = e.data.sessions || [];
+    if (typeof e.data.query === 'string') searchQuery = e.data.query;
+    var input = document.getElementById('search-input');
+    var errBox = document.getElementById('search-error');
+    if (e.data.searchError) {
+      if (input) input.classList.add('error');
+      if (errBox) { errBox.textContent = e.data.searchError; errBox.style.display = 'block'; }
+    } else {
+      if (input) input.classList.remove('error');
+      if (errBox) { errBox.style.display = 'none'; errBox.textContent = ''; }
+    }
     renderAll();
   }
 });
