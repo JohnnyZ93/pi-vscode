@@ -155,6 +155,10 @@ function startRename(file) {
   var currentName = nameEl.textContent;
   nameEl.innerHTML = '<input class="rename-input" value="' + escAttr(currentName) + '" />';
   var input = nameEl.querySelector('input');
+  // Prevent the parent .session-item click handler from opening the session when
+  // interacting with the rename input.
+  input.addEventListener('click', function(e) { e.stopPropagation(); });
+  input.addEventListener('mousedown', function(e) { e.stopPropagation(); });
   input.focus();
   input.select();
   var done = false;
@@ -264,6 +268,9 @@ document.addEventListener('click', function(ev) {
       break;
     case 'open':
       if (target.closest('button')) return;
+      // Don't open when clicking the rename input or while item is in edit mode.
+      if (target.closest('.rename-input')) return;
+      if (target.closest('.session-item.editing')) return;
       openSession(path);
       break;
     case 'rename':
