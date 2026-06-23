@@ -31,6 +31,8 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
 .session-actions button.danger:hover { background:var(--vscode-inputValidation-errorBackground,#d32f2f); color:var(--pi-error-text); border-color:transparent; }
 .rename-input { width:100%; padding:2px 4px; background:var(--vscode-input-background); color:var(--vscode-input-foreground); border:1px solid var(--vscode-focusBorder); border-radius:3px; font-size:13px; font-family:inherit; outline:none; }
 .delete-confirm { padding:6px 10px; background:var(--vscode-inputValidation-errorBackground,#d32f2f); color:var(--pi-error-text); font-size:12px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.delete-confirm .delete-text { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.delete-confirm .delete-actions { flex-shrink:0; display:flex; gap:4px; }
 .delete-confirm button { padding:2px 8px; cursor:pointer; border:none; border-radius:3px; font-size:11px; }
 .delete-confirm .btn-confirm { background:rgba(0,0,0,0.15); color:var(--pi-error-text); }
 .delete-confirm .btn-cancel { background:transparent; color:var(--pi-error-text); text-decoration:underline; }
@@ -204,6 +206,7 @@ function doDelete() {
 function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function escHtml(s) { var d = document.createElement('div'); d.textContent = String(s); return d.innerHTML; }
 function safeId(s) { return btoa(unescape(encodeURIComponent(s))).replace(/=/g, ''); }
+function truncate(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n) + '\u2026' : s; }
 
 function formatTime(iso) {
   try {
@@ -236,7 +239,8 @@ function renderAll() {
     var id = safeId(s.path);
     var pathAttr = escAttr(s.path);
     if (deleteTarget === s.path) {
-      html += '<div class="delete-confirm">Delete "' + escHtml(s.name || s.firstMessage || 'Untitled') + '"? <span><button class="btn-confirm" data-action="delete-confirm">Delete</button> <button class="btn-cancel" data-action="delete-cancel">Cancel</button></span></div>';
+      var confirmLabel = s.name ? s.name : truncate(s.firstMessage || 'Untitled', 40);
+      html += '<div class="delete-confirm"><span class="delete-text" title="' + escAttr(s.name || s.firstMessage || 'Untitled') + '">Delete "' + escHtml(confirmLabel) + '"?</span><span class="delete-actions"><button class="btn-confirm" data-action="delete-confirm">Delete</button> <button class="btn-cancel" data-action="delete-cancel">Cancel</button></span></div>';
       continue;
     }
     html += '<div class="session-item" id="item-' + id + '" data-action="open" data-path="' + pathAttr + '">';
