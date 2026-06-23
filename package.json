@@ -98,6 +98,14 @@
           "light": "assets/logo-light.svg",
           "dark": "assets/logo.svg"
         }
+      },
+      {
+        "command": "pi-agent-studio.openInFolder",
+        "title": "Pi: Open Here",
+        "icon": {
+          "light": "assets/logo-light.svg",
+          "dark": "assets/logo.svg"
+        }
       }
     ],
     "menus": {
@@ -105,6 +113,13 @@
         {
           "command": "pi-agent-studio.open",
           "group": "navigation"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "pi-agent-studio.openInFolder",
+          "group": "navigation@99",
+          "when": "explorerResourceIsFolder"
         }
       ]
     },

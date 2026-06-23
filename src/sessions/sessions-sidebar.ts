@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync, unlinkSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join, relative, sep } from "node:path";
 import { randomUUID } from "node:crypto";
 import * as vscode from "vscode";
 import { SessionManager } from "@earendil-works/pi-coding-agent";
@@ -9,9 +9,19 @@ import type { SessionTracker } from "../sessions.ts";
 import { filterAndSortSessions } from "./session-search.ts";
 import { getSessionsHtml } from "./sessions-sidebar-html.ts";
 
-export interface WorkspaceOption {
-  name: string;
-  fsPath: string;
+export interface SessionDir {
+  /** Absolute path of the cwd. Used as cache key and as the cwd for new sessions. */
+  path: string;
+  /** Owning VS Code workspace folder name. */
+  workspaceName: string;
+  /** Path relative to the workspace folder root (POSIX-style). Empty string means it IS the root. */
+  relativePath: string;
+  /** Display label: workspaceName (root) or "workspaceName/relativePath". */
+  label: string;
+  /** Number of sessions whose cwd equals this path. */
+  sessionCount: number;
+  /** True when this entry represents the workspace folder root itself. */
+  isRoot: boolean;
 }
 
 export function createSessionsViewProvider(
@@ -19,21 +29,24 @@ export function createSessionsViewProvider(
   bridgeConfig: { url: string; token: string } | undefined,
   sessionTracker: SessionTracker,
 ): vscode.WebviewViewProvider {
-  let selectedWorkspace: string | undefined;
+  let sessionDirs: SessionDir[] = [];
+  let selectedDirPath: string | undefined;
 
-  const pickInitialWorkspace = (): string | undefined => {
-    const folders = vscode.workspace.workspaceFolders;
-    if (!folders || folders.length === 0) return undefined;
-    // Prefer the workspace containing the active editor
+  const pickInitialDir = (dirs: SessionDir[]): string | undefined => {
+    if (dirs.length === 0) return undefined;
+    // Prefer the workspace containing the active editor.
     const active = vscode.window.activeTextEditor?.document.uri;
     if (active) {
-      const match = vscode.workspace.getWorkspaceFolder(active);
-      if (match) return match.uri.fsPath;
+      const owner = vscode.workspace.getWorkspaceFolder(active);
+      if (owner) {
+        const hit = dirs.find((d) => d.path === owner.uri.fsPath);
+        if (hit) return hit.path;
+      }
     }
-    return folders[0]!.uri.fsPath;
+    return dirs[0]!.path;
   };
 
-  // Per-workspace cache of the most recent SessionManager.list() result.
+  // Per-directory cache of the most recent SessionManager.list() result.
   // Search filtering happens against this in-memory cache so each keystroke
   // doesn't re-read JSONL files from disk.
   const sessionCache = new Map<string, SessionInfo[]>();
@@ -45,21 +58,20 @@ export function createSessionsViewProvider(
     resolveWebviewView(webviewView: vscode.WebviewView) {
       webviewView.webview.options = { enableScripts: true };
 
-      const folders = vscode.workspace.workspaceFolders ?? [];
-      if (!selectedWorkspace || !folders.some((f) => f.uri.fsPath === selectedWorkspace)) {
-        selectedWorkspace = pickInitialWorkspace();
-      }
-
       webviewView.webview.html = getSessionsHtml();
 
-      const postWorkspaces = () => {
-        const workspaces: WorkspaceOption[] = (vscode.workspace.workspaceFolders ?? []).map(
-          (f) => ({ name: f.name, fsPath: f.uri.fsPath }),
-        );
+      const postDirs = () => {
         webviewView.webview.postMessage({
-          type: "workspaces",
-          workspaces,
-          selected: selectedWorkspace,
+          type: "dirs",
+          dirs: sessionDirs.map((d) => ({
+            path: d.path,
+            workspaceName: d.workspaceName,
+            relativePath: d.relativePath,
+            label: d.label,
+            sessionCount: d.sessionCount,
+            isRoot: d.isRoot,
+          })),
+          selected: selectedDirPath,
         });
       };
 
@@ -72,7 +84,7 @@ export function createSessionsViewProvider(
       };
 
       const postFiltered = (query: string) => {
-        const cwd = selectedWorkspace;
+        const cwd = selectedDirPath;
         if (!cwd) {
           webviewView.webview.postMessage({ type: "sessions", sessions: [], query });
           return;
@@ -98,32 +110,37 @@ export function createSessionsViewProvider(
       };
 
       const reloadAndPost = async (query: string) => {
-        if (!selectedWorkspace) {
+        if (!selectedDirPath) {
           webviewView.webview.postMessage({ type: "sessions", sessions: [], query });
           return;
         }
         try {
-          const sessions = await SessionManager.list(selectedWorkspace);
-          sessionCache.set(selectedWorkspace, sessions);
+          const sessions = await SessionManager.list(selectedDirPath);
+          sessionCache.set(selectedDirPath, sessions);
         } catch (err) {
           console.error("[pi-agent-studio] Sessions view: error fetching sessions:", err);
-          sessionCache.set(selectedWorkspace, []);
+          sessionCache.set(selectedDirPath, []);
         }
         postFiltered(query);
       };
 
       const refreshAll = async () => {
-        postWorkspaces();
+        try {
+          sessionDirs = await discoverSessionDirs();
+        } catch (err) {
+          console.error("[pi-agent-studio] Sessions view: error discovering dirs:", err);
+          sessionDirs = fallbackDirsFromWorkspace();
+        }
+        if (!selectedDirPath || !sessionDirs.some((d) => d.path === selectedDirPath)) {
+          selectedDirPath = pickInitialDir(sessionDirs);
+        }
+        postDirs();
         await reloadAndPost(lastSearchQuery);
       };
 
       void refreshAll();
 
       const folderSub = vscode.workspace.onDidChangeWorkspaceFolders(() => {
-        const current = vscode.workspace.workspaceFolders ?? [];
-        if (!current.some((f) => f.uri.fsPath === selectedWorkspace)) {
-          selectedWorkspace = pickInitialWorkspace();
-        }
         void refreshAll();
       });
 
@@ -141,16 +158,18 @@ export function createSessionsViewProvider(
           case "refresh":
             await refreshAll();
             break;
-          case "selectWorkspace":
-            selectedWorkspace = msg.fsPath;
-            await reloadAndPost(lastSearchQuery);
+          case "selectDir":
+            if (typeof msg.path === "string" && sessionDirs.some((d) => d.path === msg.path)) {
+              selectedDirPath = msg.path;
+              await reloadAndPost(lastSearchQuery);
+            }
             break;
           case "search":
             lastSearchQuery = typeof msg.query === "string" ? msg.query : "";
             postFiltered(lastSearchQuery);
             break;
           case "new":
-            await vscode.commands.executeCommand("pi-agent-studio.open");
+            await openNewSessionInDir(selectedDirPath, extensionUri, bridgeConfig, sessionTracker);
             break;
           case "open":
             await openSession(msg.sessionFile, extensionUri, bridgeConfig, sessionTracker);
@@ -161,7 +180,9 @@ export function createSessionsViewProvider(
             break;
           case "delete":
             await deleteSession(msg.sessionFile);
-            await reloadAndPost(lastSearchQuery);
+            // Full refresh so the header dropdown's session counts (and possibly
+            // the set of visible subdirs) reflect the deletion.
+            await refreshAll();
             break;
         }
       });
@@ -177,6 +198,119 @@ function serializeSession(s: SessionInfo) {
     messageCount: s.messageCount || 0,
     modified: s.modified instanceof Date ? s.modified.toISOString() : (s.modified ?? ""),
   };
+}
+
+/**
+ * Discover all directories that should appear in the sidebar dropdown:
+ *   - every VS Code workspace folder root (even if empty), so the user can always start fresh there
+ *   - every distinct `session.cwd` that lives under one of those roots
+ *
+ * Sessions whose `cwd` falls outside any workspace are ignored — they can still be opened by
+ * clicking the session row (that path goes through `openSession()` with `--session <file>`).
+ */
+async function discoverSessionDirs(): Promise<SessionDir[]> {
+  const folders = vscode.workspace.workspaceFolders ?? [];
+  if (folders.length === 0) return [];
+
+  let cwdCounts: Map<string, number>;
+  try {
+    const all = await SessionManager.listAll();
+    cwdCounts = new Map<string, number>();
+    for (const s of all) {
+      if (!s.cwd) continue;
+      cwdCounts.set(s.cwd, (cwdCounts.get(s.cwd) ?? 0) + 1);
+    }
+  } catch (err) {
+    console.error("[pi-agent-studio] SessionManager.listAll failed:", err);
+    cwdCounts = new Map();
+  }
+
+  const dirs: SessionDir[] = [];
+  for (const folder of folders) {
+    const rootPath = folder.uri.fsPath;
+    let rootSeen = false;
+    const collected: SessionDir[] = [];
+
+    for (const [cwd, count] of cwdCounts) {
+      if (!isInsideOrEqual(rootPath, cwd)) continue;
+      const rel = relative(rootPath, cwd).split(sep).join("/");
+      const isRoot = rel === "";
+      if (isRoot) rootSeen = true;
+      collected.push({
+        path: cwd,
+        workspaceName: folder.name,
+        relativePath: rel,
+        label: isRoot ? folder.name : `${folder.name}/${rel}`,
+        sessionCount: count,
+        isRoot,
+      });
+    }
+
+    if (!rootSeen) {
+      collected.push({
+        path: rootPath,
+        workspaceName: folder.name,
+        relativePath: "",
+        label: folder.name,
+        sessionCount: 0,
+        isRoot: true,
+      });
+    }
+
+    // Within a workspace: root first, then subdirs sorted by relativePath.
+    collected.sort((a, b) => {
+      if (a.isRoot !== b.isRoot) return a.isRoot ? -1 : 1;
+      return a.relativePath.localeCompare(b.relativePath);
+    });
+
+    dirs.push(...collected);
+  }
+
+  return dirs;
+}
+
+function isInsideOrEqual(parent: string, child: string): boolean {
+  const rel = relative(parent, child);
+  if (rel === "") return true;
+  if (rel.startsWith("..")) return false;
+  // Different-drive paths on Windows return an absolute path from `path.relative`.
+  return !isAbsolute(rel);
+}
+
+function fallbackDirsFromWorkspace(): SessionDir[] {
+  const folders = vscode.workspace.workspaceFolders ?? [];
+  return folders.map((f) => ({
+    path: f.uri.fsPath,
+    workspaceName: f.name,
+    relativePath: "",
+    label: f.name,
+    sessionCount: 0,
+    isRoot: true,
+  }));
+}
+
+async function openNewSessionInDir(
+  cwd: string | undefined,
+  extensionUri: vscode.Uri,
+  bridgeConfig: { url: string; token: string } | undefined,
+  sessionTracker: SessionTracker,
+): Promise<void> {
+  const effectiveCwd = cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!effectiveCwd) {
+    void vscode.window.showErrorMessage("No workspace folder available");
+    return;
+  }
+  const terminalId = randomUUID();
+  const terminal = await createNewTerminal({
+    extensionUri,
+    bridgeConfig,
+    terminalId,
+    cwd: effectiveCwd,
+  });
+  if (terminal) {
+    sessionTracker.track(terminal, terminalId);
+    terminal.show();
+  }
 }
 
 async function openSession(

@@ -6,7 +6,8 @@ export function getSessionsHtml(): string {
 body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family); font-size: 13px; color: var(--vscode-foreground); display:flex; flex-direction:column; overflow-x:hidden; }
 .header { padding:8px; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; border-bottom:1px solid var(--vscode-widget-border,var(--vscode-panel-border,transparent)); gap:6px; }
 .header strong { font-size:12px; white-space:nowrap; }
-.header select { flex:1; min-width:0; background:var(--vscode-dropdown-background); color:var(--vscode-dropdown-foreground); border:1px solid var(--vscode-dropdown-border); border-radius:3px; font-size:12px; padding:2px 4px; font-family:inherit; outline:none; }
+.header .muted { font-size:12px; white-space:nowrap; opacity:0.5; }
+.header select { flex:1; min-width:0; background:var(--vscode-dropdown-background); color:var(--vscode-dropdown-foreground); border:1px solid var(--vscode-dropdown-border); border-radius:3px; font-size:12px; padding:2px 4px; font-family:inherit; outline:none; text-overflow:ellipsis; }
 .header button { padding:2px 4px; cursor:pointer; background:transparent; color:var(--vscode-foreground); border:1px solid var(--vscode-widget-border,transparent); border-radius:3px; font-size:12px; opacity:0.7; white-space:nowrap; }
 .header button:hover { opacity:1; }
 .header .header-actions { display:flex; gap:4px; flex-shrink:0; }
@@ -53,8 +54,8 @@ body { height:100%; margin:0; padding:0; font-family: var(--vscode-font-family);
 const vscode = acquireVsCodeApi();
 let deleteTarget = null;
 let sessionsData = [];
-let workspaces = [];
-let selectedWorkspace = null;
+let dirs = [];
+let selectedDirPath = null;
 let searchVisible = false;
 let searchQuery = '';
 let searchDebounceTimer = null;
@@ -122,9 +123,9 @@ function toggleSearch() {
   updateSearchBarVisibility();
 }
 
-function onWorkspaceChange() {
-  selectedWorkspace = this.value;
-  vscode.postMessage({ type: 'selectWorkspace', fsPath: selectedWorkspace });
+function onDirChange() {
+  selectedDirPath = this.value;
+  vscode.postMessage({ type: 'selectDir', path: selectedDirPath });
 }
 
 function updateHeader() {
@@ -134,17 +135,22 @@ function updateHeader() {
     '<button data-action="new" title="New Session">+</button> ' +
     '<button data-action="refresh" title="Refresh">↻</button>' +
     '</span>';
-  if (workspaces.length <= 1) {
-    const name = workspaces.length === 1 ? workspaces[0].name : 'Sessions';
-    header.innerHTML = '<strong>' + escHtml(name) + '</strong> ' + actions;
-  } else {
-    let opts = workspaces.map(function(w) {
-      return '<option value="' + escAttr(w.fsPath) + '"' + (w.fsPath === selectedWorkspace ? ' selected' : '') + '>' + escHtml(w.name) + '</option>';
-    }).join('');
-    header.innerHTML = '<select id="workspace-select">' + opts + '</select> ' + actions;
-    var sel = document.getElementById('workspace-select');
-    if (sel) sel.addEventListener('change', onWorkspaceChange);
+  if (!dirs || dirs.length === 0) {
+    header.innerHTML = '<span class="muted">No workspace</span> ' + actions;
+    return;
   }
+  if (dirs.length === 1) {
+    header.innerHTML = '<strong>' + escHtml(dirs[0].label) + '</strong> ' + actions;
+    return;
+  }
+  var opts = dirs.map(function(d) {
+    var countSuffix = d.sessionCount > 0 ? ' (' + d.sessionCount + ')' : '';
+    var sel = d.path === selectedDirPath ? ' selected' : '';
+    return '<option value="' + escAttr(d.path) + '"' + sel + '>' + escHtml(d.label) + countSuffix + '</option>';
+  }).join('');
+  header.innerHTML = '<select id="dir-select" title="Select directory">' + opts + '</select> ' + actions;
+  var sel = document.getElementById('dir-select');
+  if (sel) sel.addEventListener('change', onDirChange);
 }
 
 function startRename(file) {
@@ -293,11 +299,10 @@ document.addEventListener('click', function(ev) {
 });
 
 window.addEventListener('message', function(e) {
-  if (e.data.type === 'workspaces') {
-    workspaces = e.data.workspaces || [];
-    selectedWorkspace = e.data.selected;
+  if (e.data.type === 'dirs') {
+    dirs = e.data.dirs || [];
+    selectedDirPath = e.data.selected;
     updateHeader();
-    // Re-apply visibility/active state after header re-render.
     updateSearchBarVisibility();
   }
   if (e.data.type === 'sessions') {

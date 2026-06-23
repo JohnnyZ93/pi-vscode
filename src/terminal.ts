@@ -8,11 +8,12 @@ export async function createNewTerminal(options: {
   extraArgs?: string[];
   terminalId?: string;
   sessionFile?: string;
+  cwd?: string;
 }): Promise<vscode.Terminal | undefined> {
   const piPath = await ensurePiBinary();
   if (!piPath) return undefined;
 
-  const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  const cwd = options.cwd ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   const viewColumn = findPiColumn() ?? findUnusedColumn() ?? vscode.ViewColumn.Beside;
 
   const piArgs = createPiShellArgs({

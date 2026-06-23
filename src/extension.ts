@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { statSync } from "node:fs";
+import { dirname } from "node:path";
 import * as vscode from "vscode";
 import { createBridge } from "./bridge/server.ts";
 import { TERMINAL_TITLE } from "./constants.ts";
@@ -45,6 +47,18 @@ export async function activate(context: vscode.ExtensionContext) {
     return terminal;
   };
 
+  const openTerminalInCwd = async (cwd: string): Promise<vscode.Terminal | undefined> => {
+    const terminalId = randomUUID();
+    const terminal = await createNewTerminal({
+      extensionUri,
+      bridgeConfig,
+      terminalId,
+      cwd,
+    });
+    if (terminal) sessions.track(terminal, terminalId);
+    return terminal;
+  };
+
   const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBarItem.text = "$(pi-logo) Pi";
   statusBarItem.tooltip = "Open Pi Terminal";
@@ -66,6 +80,17 @@ export async function activate(context: vscode.ExtensionContext) {
       if (!terminal) return;
       terminal.show();
       await vscode.commands.executeCommand("workbench.action.moveEditorToNewWindow");
+    }),
+    vscode.commands.registerCommand("pi-agent-studio.openInFolder", async (uri?: vscode.Uri) => {
+      const cwd = resolveExplorerCwd(uri);
+      if (!cwd) {
+        void vscode.window.showErrorMessage(
+          "Pi: Unable to resolve a folder from the selected item.",
+        );
+        return;
+      }
+      const terminal = await openTerminalInCwd(cwd);
+      terminal?.show();
     }),
     vscode.commands.registerCommand("pi-agent-studio.upgrade", upgradePiBinary),
     vscode.commands.registerCommand("pi-agent-studio.openSettingsJson", async () => {
@@ -100,4 +125,24 @@ export async function deactivate() {
   bridgeDispose = undefined;
   bridgeConfig = undefined;
   await dispose?.();
+}
+
+/**
+ * Resolve a usable cwd from an Explorer-context command argument.
+ *  - File   → use its parent directory
+ *  - Folder → use as-is
+ *  - Missing on disk → return undefined
+ *  - No uri (e.g. invoked from command palette) → fall back to first workspace folder
+ */
+function resolveExplorerCwd(uri: vscode.Uri | undefined): string | undefined {
+  if (!uri || uri.scheme !== "file") {
+    return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  }
+  const fsPath = uri.fsPath;
+  try {
+    const stat = statSync(fsPath);
+    return stat.isDirectory() ? fsPath : dirname(fsPath);
+  } catch {
+    return undefined;
+  }
 }
