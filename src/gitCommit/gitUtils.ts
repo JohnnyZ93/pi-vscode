@@ -16,7 +16,7 @@ async function checkGitRepo(cwd: string): Promise<boolean> {
   try {
     await execAsync("git rev-parse --git-dir", { cwd });
     return true;
-  } catch (_error) {
+  } catch {
     return false;
   }
 }
@@ -25,7 +25,7 @@ async function checkGitInstalled(): Promise<boolean> {
   try {
     await execAsync("git --version");
     return true;
-  } catch (_error) {
+  } catch {
     return false;
   }
 }
@@ -34,7 +34,7 @@ async function checkGitRepoHasCommits(cwd: string): Promise<boolean> {
   try {
     await execAsync("git rev-parse HEAD", { cwd });
     return true;
-  } catch (_error) {
+  } catch {
     return false;
   }
 }
@@ -223,6 +223,7 @@ export async function getGitDiff(cwd: string, stagedOnly = false): Promise<strin
 
     return `'${command}' Output:\n\n${diff}`.trim();
   } catch (error) {
+    console.error("Error getting diff:", error);
     throw error;
   }
 }

@@ -104,7 +104,7 @@ async function filterForReposWithChanges(repos: any[]) {
       if (gitDiff) {
         reposWithChanges.push(repo);
       }
-    } catch (error) {
+    } catch {
       // Skip repositories with errors (no changes, etc.)
     }
   }
