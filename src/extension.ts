@@ -12,6 +12,7 @@ import { createSettingsViewProvider } from "./settings/settings-sidebar.ts";
 import { ensureSettingsJsonExists } from "./settings/settings-config.ts";
 import { createSessionTracker } from "./sessions.ts";
 import { createNewTerminal } from "./terminal.ts";
+import { abortCommitGeneration, generateCommitMsg } from "./gitCommit/commitMessageGenerator.ts";
 
 let extensionUri: vscode.Uri;
 let bridgeConfig: { url: string; token: string } | undefined;
@@ -102,6 +103,12 @@ export async function activate(context: vscode.ExtensionContext) {
       const path = ensureModelsJsonExists();
       const doc = await vscode.workspace.openTextDocument(path);
       await vscode.window.showTextDocument(doc);
+    }),
+    vscode.commands.registerCommand("pi-agent-studio.generateGitCommitMessage", async (scm) => {
+      generateCommitMsg(scm);
+    }),
+    vscode.commands.registerCommand("pi-agent-studio.abortGitCommitMessage", () => {
+      abortCommitGeneration();
     }),
     vscode.window.registerWebviewViewProvider(
       "pi-agent-studio.sessions",

@@ -106,6 +106,19 @@
           "light": "assets/logo-light.svg",
           "dark": "assets/logo.svg"
         }
+      },
+      {
+        "command": "pi-agent-studio.generateGitCommitMessage",
+        "title": "Generate Commit Message with Pi",
+        "icon": {
+          "light": "assets/logo-light.svg",
+          "dark": "assets/logo.svg"
+        }
+      },
+      {
+        "command": "pi-agent-studio.abortGitCommitMessage",
+        "title": "Generate Commit Message with Pi - Stop",
+        "icon": "$(debug-stop)"
       }
     ],
     "menus": {
@@ -120,6 +133,28 @@
           "command": "pi-agent-studio.openInFolder",
           "group": "navigation@99",
           "when": "explorerResourceIsFolder"
+        }
+      ],
+      "scm/title": [
+        {
+          "command": "pi-agent-studio.generateGitCommitMessage",
+          "group": "navigation",
+          "when": "config.git.enabled && scmProvider == git && !pi-agent-studio.isGeneratingCommit"
+        },
+        {
+          "command": "pi-agent-studio.abortGitCommitMessage",
+          "group": "navigation",
+          "when": "config.git.enabled && scmProvider == git && pi-agent-studio.isGeneratingCommit"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "pi-agent-studio.generateGitCommitMessage",
+          "when": "config.git.enabled && !pi-agent-studio.isGeneratingCommit"
+        },
+        {
+          "command": "pi-agent-studio.abortGitCommitMessage",
+          "when": "config.git.enabled && pi-agent-studio.isGeneratingCommit"
         }
       ]
     },
@@ -172,6 +207,32 @@
           },
           "default": [],
           "description": "Extra command-line arguments passed to pi."
+        },
+        "pi-agent-studio.commitLanguage": {
+          "type": "string",
+          "default": "English",
+          "enum": [
+            "English",
+            "French",
+            "Italian",
+            "German",
+            "Spanish",
+            "Russian",
+            "Chinese (Simplified)",
+            "Chinese (Traditional)",
+            "Japanese",
+            "Korean",
+            "Czech",
+            "Portuguese (Brazil)",
+            "Turkish",
+            "Polish"
+          ],
+          "description": "Language for generated Git commit messages. Default is English."
+        },
+        "pi-agent-studio.commitMessagePrompt": {
+          "type": "string",
+          "default": "",
+          "description": "Custom system prompt for commit message generation. If not provided, uses the default prompt."
         }
       }
     },
