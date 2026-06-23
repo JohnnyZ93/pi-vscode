@@ -2,6 +2,13 @@
 
 All notable changes to **Pi Agent Studio** are documented in this file.
 
+## [1.0.2] - 2026-06-23
+
+- Replaced package manager inference with `pi update` for binary upgrades.
+- Added AI-powered Git commit message generation with 14 language support.
+- Added "Pi: Open Here" context menu command for explorer folders.
+- Fixed sidebar UI to use CSS variables for consistent error styling.
+
 ## [1.0.1] - 2026-06-22
 
 - Added session search with fuzzy matching, quoted phrases, and `re:` regex.

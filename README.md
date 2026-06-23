@@ -22,6 +22,7 @@ English | [简体中文](README.zh-CN.md)
 - **Live VS Code footer status** — pi's terminal UI shows the active VS Code file, cursor/selection, language, dirty marker, and diagnostic counts in its bottom status area
 - **Diagnostics tool** — The agent can read VS Code diagnostics (LSP / lint / type errors) on demand via `vscode_get_diagnostics`
 - **Slash commands** — `/vscode-selection` and `/vscode-diagnostics` inject the current editor selection or diagnostics into the conversation, with the rest of the editor surface intentionally kept off-limits to the model
+- **AI-powered Git commit messages** — Generate semantic commit messages from staged changes using pi, with support for 14 languages and custom prompt templates
 - **Session restoration** — Per-workspace pi sessions are persisted and relaunched with `--session` after IDE reload
 - **Sidebar views** — Visual management panel: `Sessions` (new/restore/switch), `Models` (Providers / OAuth / API Keys), and `Settings` (env info, system prompt override/append) — all webviews backed by direct `~/.pi/agent/*.json` I/O
 - **Status bar / title bar buttons** — Pi button on the editor title bar for quick access
@@ -57,13 +58,16 @@ ovsx get johnny-zhao/pi-agent-studio
 
 ## Commands
 
-| Command                  | Keybinding    | Description                                                                                    |
-| ------------------------ | ------------- | ---------------------------------------------------------------------------------------------- |
-| `Pi: Open`               | `Alt+Shift+P` | Open or focus the pi terminal beside the editor                                                |
-| `Pi: Open in New Window` | —             | Open pi then move it to a new VS Code window                                                   |
-| `Pi: Upgrade Pi`         | —             | Upgrade pi via `pi update`                                                                     |
-| `Pi: Open settings.json` | —             | Open `~/.pi/agent/settings.json` in the editor (creates an empty `{}` if missing)              |
-| `Pi: Open models.json`   | —             | Open `~/.pi/agent/models.json` in the editor (creates an empty `{ providers: {} }` if missing) |
+| Command                              | Keybinding    | Description                                                                                    |
+| ------------------------------------ | ------------- | ---------------------------------------------------------------------------------------------- |
+| `Pi: Open`                           | `Alt+Shift+P` | Open or focus the pi terminal beside the editor                                                |
+| `Pi: Open in New Window`             | —             | Open pi then move it to a new VS Code window                                                   |
+| `Pi: Open Here`                      | —             | Open a pi terminal in the selected folder (via explorer context menu)                          |
+| `Pi: Upgrade Pi`                     | —             | Upgrade pi via `pi update`                                                                     |
+| `Pi: Open settings.json`             | —             | Open `~/.pi/agent/settings.json` in the editor (creates an empty `{}` if missing)              |
+| `Pi: Open models.json`               | —             | Open `~/.pi/agent/models.json` in the editor (creates an empty `{ providers: {} }` if missing) |
+| `Pi: Generate Commit Message`        | —             | Generate an AI-powered Git commit message from staged changes using pi                         |
+| `Pi: Generate Commit Message - Stop` | —             | Abort an ongoing commit message generation                                                     |
 
 The **Pi: Open** command is also wired to the editor title bar for one-click access.
 
@@ -124,11 +128,13 @@ Example:
 
 ## Configuration
 
-| Setting                | Type     | Default | Description                                                                           |
-| ---------------------- | -------- | ------- | ------------------------------------------------------------------------------------- |
-| `pi-agent-studio.path` | `string` | `""`    | Absolute path to the pi binary (auto-detected if empty)                               |
-| `pi-agent-studio.env`  | `object` | `{}`    | Environment variables merged into the pi terminal (bridge vars win on key collision)  |
-| `pi-agent-studio.args` | `array`  | `[]`    | Extra CLI args appended after `--extension` and before any caller-supplied extra args |
+| Setting                               | Type     | Default     | Description                                                                           |
+| ------------------------------------- | -------- | ----------- | ------------------------------------------------------------------------------------- |
+| `pi-agent-studio.path`                | `string` | `""`        | Absolute path to the pi binary (auto-detected if empty)                               |
+| `pi-agent-studio.env`                 | `object` | `{}`        | Environment variables merged into the pi terminal (bridge vars win on key collision)  |
+| `pi-agent-studio.args`                | `array`  | `[]`        | Extra CLI args appended after `--extension` and before any caller-supplied extra args |
+| `pi-agent-studio.commitLanguage`      | `string` | `"English"` | Language for generated Git commit messages (14 languages supported)                   |
+| `pi-agent-studio.commitMessagePrompt` | `string` | `""`        | Custom system prompt for commit message generation                                    |
 
 ## Building from source
 

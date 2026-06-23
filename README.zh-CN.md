@@ -22,6 +22,7 @@
 - **实时 VS Code 状态栏** —— pi 终端底部状态条实时显示当前文件、光标 / 选区、语言、未保存标记和诊断数量
 - **诊断工具** —— Agent 可通过 `vscode_get_diagnostics` 按需读取 VS Code 诊断（LSP / lint / 类型错误）
 - **Slash 命令** —— `/vscode-selection` 与 `/vscode-diagnostics` 将当前选区或诊断以用户消息的形式注入对话；其余编辑器能力刻意不对模型开放
+- **AI 驱动的 Git 提交信息** —— 基于 pi 从暂存区变更生成语义化 commit message，支持 14 种语言与自定义提示模板
 - **会话恢复** —— 按工作区持久化 pi 会话，IDE 重启后通过 `--session` 自动续接
 - **侧边栏视图** —— 可视化管理面板：`Sessions`（新建/恢复/切换会话）、`Models`（Providers / OAuth / API Keys）与 `Settings`（环境信息、系统提示覆盖/追加），均为 webview 实现，直接读写 `~/.pi/agent/*.json`
 - **编辑器标题栏按钮** —— 编辑器标题栏快捷打开 pi
@@ -57,13 +58,16 @@ ovsx get johnny-zhao/pi-agent-studio
 
 ## 命令
 
-| 命令                     | 快捷键        | 说明                                                                         |
-| ------------------------ | ------------- | ---------------------------------------------------------------------------- |
-| `Pi: Open`               | `Alt+Shift+P` | 在编辑器旁打开或聚焦 pi 终端                                                 |
-| `Pi: Open in New Window` | —             | 打开 pi 终端并将其移动到新窗口                                               |
-| `Pi: Upgrade Pi`         | —             | 推断 pi 所用包管理器并升级 pi 全局安装（**不会**执行 `pi update`）           |
-| `Pi: Open settings.json` | —             | 在编辑器中打开 `~/.pi/agent/settings.json`（不存在时创建 `{}`）              |
-| `Pi: Open models.json`   | —             | 在编辑器中打开 `~/.pi/agent/models.json`（不存在时创建 `{ providers: {} }`） |
+| 命令                                 | 快捷键        | 说明                                                                         |
+| ------------------------------------ | ------------- | ---------------------------------------------------------------------------- |
+| `Pi: Open`                           | `Alt+Shift+P` | 在编辑器旁打开或聚焦 pi 终端                                                 |
+| `Pi: Open in New Window`             | —             | 打开 pi 终端并将其移动到新窗口                                               |
+| `Pi: Open Here`                      | —             | 在选中文件夹中打开 pi 终端（通过资源管理器右键菜单）                         |
+| `Pi: Upgrade Pi`                     | —             | 调用 `pi update` 升级 pi                                                     |
+| `Pi: Open settings.json`             | —             | 在编辑器中打开 `~/.pi/agent/settings.json`（不存在时创建 `{}`）              |
+| `Pi: Open models.json`               | —             | 在编辑器中打开 `~/.pi/agent/models.json`（不存在时创建 `{ providers: {} }`） |
+| `Pi: Generate Commit Message`        | —             | 基于 pi 从暂存区生成 AI Git commit message                                   |
+| `Pi: Generate Commit Message - Stop` | —             | 中止正在进行的 commit message 生成                                           |
 
 **Pi: Open** 命令同时绑定在编辑器标题栏上，可一键打开。
 
@@ -124,11 +128,13 @@ ovsx get johnny-zhao/pi-agent-studio
 
 ## 配置项
 
-| 设置项                 | 类型     | 默认值 | 说明                                                     |
-| ---------------------- | -------- | ------ | -------------------------------------------------------- |
-| `pi-agent-studio.path` | `string` | `""`   | pi 二进制的绝对路径（留空则自动检测）                    |
-| `pi-agent-studio.env`  | `object` | `{}`   | 合并到 pi 终端的环境变量（与桥接变量冲突时桥接变量优先） |
-| `pi-agent-studio.args` | `array`  | `[]`   | 追加到 `--extension` 之后、调用方额外参数之前的 CLI 参数 |
+| 设置项                                | 类型     | 默认值      | 说明                                                     |
+| ------------------------------------- | -------- | ----------- | -------------------------------------------------------- |
+| `pi-agent-studio.path`                | `string` | `""`        | pi 二进制的绝对路径（留空则自动检测）                    |
+| `pi-agent-studio.env`                 | `object` | `{}`        | 合并到 pi 终端的环境变量（与桥接变量冲突时桥接变量优先） |
+| `pi-agent-studio.args`                | `array`  | `[]`        | 追加到 `--extension` 之后、调用方额外参数之前的 CLI 参数 |
+| `pi-agent-studio.commitLanguage`      | `string` | `"English"` | 生成 Git commit message 的语言（支持 14 种语言）         |
+| `pi-agent-studio.commitMessagePrompt` | `string` | `""`        | commit message 生成的自定义系统提示                      |
 
 ## 从源码构建
 
