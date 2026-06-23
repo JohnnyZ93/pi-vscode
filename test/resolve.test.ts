@@ -2,11 +2,7 @@ import { constants } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { resolvePiBinary } from "../src/_resolve.ts";
-import {
-  createPiGlobalInstallCommand,
-  createPiUpgradeCommand,
-  guessPiPackageManager,
-} from "../src/upgrade.ts";
+import { createPiGlobalInstallCommand } from "../src/upgrade.ts";
 
 function mockAccess(existing: Set<string>) {
   return (path: string, _mode: number) => {
@@ -236,29 +232,6 @@ describe("resolvePiBinary", () => {
   });
 });
 
-describe("guessPiPackageManager", () => {
-  it("guesses bun from bun global bin paths", () => {
-    expect(guessPiPackageManager("/Users/dev/.bun/bin/pi")).toBe("bun");
-  });
-
-  it("guesses pnpm from pnpm global bin paths", () => {
-    expect(guessPiPackageManager("/Users/dev/.local/share/pnpm/pi")).toBe("pnpm");
-  });
-
-  it("guesses npm from npm and node global bin paths", () => {
-    expect(guessPiPackageManager("/Users/dev/.npm-global/bin/pi")).toBe("npm");
-    expect(guessPiPackageManager("C:\\Program Files\\nodejs\\pi.cmd")).toBe("npm");
-  });
-
-  it("guesses yarn from yarn global bin paths", () => {
-    expect(guessPiPackageManager("/Users/dev/.yarn/bin/pi")).toBe("yarn");
-  });
-
-  it("returns undefined for ambiguous paths", () => {
-    expect(guessPiPackageManager("/usr/local/bin/pi")).toBeUndefined();
-  });
-});
-
 describe("createPiGlobalInstallCommand", () => {
   it("returns global install commands for supported package managers", () => {
     expect(createPiGlobalInstallCommand("npm")).toBe(
@@ -272,20 +245,6 @@ describe("createPiGlobalInstallCommand", () => {
     );
     expect(createPiGlobalInstallCommand("yarn")).toBe(
       "yarn global add @earendil-works/pi-coding-agent@latest",
-    );
-  });
-});
-
-describe("createPiUpgradeCommand", () => {
-  it("runs pi update after the global install", () => {
-    expect(createPiUpgradeCommand("npm", "/Users/dev/.npm-global/bin/pi", "linux")).toBe(
-      "npm install --global --ignore-scripts @earendil-works/pi-coding-agent@latest && /Users/dev/.npm-global/bin/pi update",
-    );
-  });
-
-  it("quotes pi paths with spaces", () => {
-    expect(createPiUpgradeCommand("npm", "/Users/dev/my tools/pi", "linux")).toBe(
-      "npm install --global --ignore-scripts @earendil-works/pi-coding-agent@latest && '/Users/dev/my tools/pi' update",
     );
   });
 });

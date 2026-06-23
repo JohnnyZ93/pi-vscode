@@ -1,14 +1,9 @@
-import { accessSync, constants, realpathSync } from "node:fs";
+import { accessSync, constants } from "node:fs";
 import { join } from "node:path";
 import * as vscode from "vscode";
 import { BRIDGE_EXTENSION_PATH } from "./constants.ts";
 import { resolvePiBinary } from "./_resolve.ts";
-import {
-  createPiGlobalInstallCommand,
-  guessPiPackageManager,
-  PI_PACKAGE_MANAGERS,
-  type PiPackageManager,
-} from "./upgrade.ts";
+import { createPiGlobalInstallCommand, PI_PACKAGE_MANAGERS } from "./upgrade.ts";
 
 let piExistsCache: boolean | undefined;
 
@@ -57,23 +52,10 @@ export async function upgradePiBinary(): Promise<void> {
   const piPath = await ensurePiBinary();
   if (!piPath) return;
 
-  let manager: PiPackageManager | undefined = guessPiPackageManager(piPath);
-  if (!manager) {
-    try {
-      manager = guessPiPackageManager(realpathSync(piPath));
-    } catch {}
-  }
-  if (!manager) {
-    manager = (await vscode.window.showQuickPick([...PI_PACKAGE_MANAGERS], {
-      placeHolder: `Could not infer the package manager for ${piPath}. Choose one to upgrade Pi globally.`,
-    })) as PiPackageManager | undefined;
-  }
-  if (!manager) return;
-
   const terminal = vscode.window.createTerminal({ name: "Upgrade Pi" });
   terminal.show();
-  terminal.sendText(createPiGlobalInstallCommand(manager));
-  void vscode.window.showInformationMessage(`Upgrading Pi with ${manager}. Found pi at: ${piPath}`);
+  terminal.sendText(`pi update`);
+  void vscode.window.showInformationMessage("Upgrading Pi via `pi update`.");
 }
 
 /**

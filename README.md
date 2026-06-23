@@ -61,7 +61,7 @@ ovsx get johnny-zhao/pi-agent-studio
 | ------------------------ | ------------- | ---------------------------------------------------------------------------------------------- |
 | `Pi: Open`               | `Alt+Shift+P` | Open or focus the pi terminal beside the editor                                                |
 | `Pi: Open in New Window` | —             | Open pi then move it to a new VS Code window                                                   |
-| `Pi: Upgrade Pi`         | —             | Detect the pi binary's package manager and upgrade pi globally (does **not** run `pi update`)  |
+| `Pi: Upgrade Pi`         | —             | Upgrade pi via `pi update`                                                                     |
 | `Pi: Open settings.json` | —             | Open `~/.pi/agent/settings.json` in the editor (creates an empty `{}` if missing)              |
 | `Pi: Open models.json`   | —             | Open `~/.pi/agent/models.json` in the editor (creates an empty `{ providers: {} }` if missing) |
 

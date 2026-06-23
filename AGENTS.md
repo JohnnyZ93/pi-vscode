@@ -49,7 +49,7 @@ Sidebar views (all webview, registered under `pi` activity container):
 
 - **Pi npm package is `@earendil-works/pi-coding-agent`** (see `src/upgrade.ts` `PI_PACKAGE_NAME`). The README/install instructions still mention the legacy `@mariozechner/pi-coding-agent` name — do not propagate the old name into new code.
 - **Pi binary resolution** (`src/_resolve.ts`): workspace `node_modules/.bin/pi` → known global dirs (`~/.bun/bin`, `~/.local/bin`, `~/.npm-global/bin`; on Windows `%APPDATA%/npm`, `%LOCALAPPDATA%/pnpm`) → PATH → fallback `"pi"`. On Windows, **explicit `customPath` is respected as-is when the file exists**. Only when the configured path is missing do we probe `.exe` → `.cmd` → `.ps1` (auto-detect on workspace/global/PATH lookups also uses that order, so the default lands on `.cmd` which VS Code spawns cleanly). Use `F_OK` not `X_OK` on Windows. `piExistsCache` (in `src/pi.ts`) is invalidated by `invalidatePiBinaryCache()` — wired to `onDidChangeConfiguration("pi-agent-studio.path")` and to the post-install prompt branch.
-- **Package manager inference** (`src/upgrade.ts` `guessPiPackageManager`): path-segment heuristic. `npm install --global` uses `--ignore-scripts`. `Pi: Upgrade Pi` only upgrades the binary; `createPiUpgradeCommand` (binary + `pi update`) exists but is intentionally **not** wired to any command yet.
+- **Package manager inference was removed; upgrade now uses `pi update`.** First-time install still prompts the user to pick a manager (`PI_PACKAGE_MANAGERS`) and runs `createPiGlobalInstallCommand` with `--ignore-scripts` for npm/bun/pnpm.
 - **Models Providers tab** uses event delegation with `data-action`/`data-id` (no inline `onclick` string concatenation — broke on dashes/quotes in ids). Renames combine with field updates into a single `renameProviderAndUpdate` message so they apply atomically. Empty-string fields are sent as `null` and converted to `undefined` so `JSON.stringify` drops them.
 - **OAuth flow** (`src/models/oauth-flow.ts`) mirrors pi-web's `app/api/auth/login/[provider]/route.ts`: drives `AuthStorage.login()` with a shared memoized "manual input" request so `onAuth` / `onPrompt` / `onManualCodeInput` resolve the same promise. **Let `AuthStorage.login()` persist credentials itself** — do NOT write a placeholder credential afterwards (corrupts the SDK-managed entry).
 - **Bridge details**: `vscode_get_selection` falls back to the latest cached VS Code selection while the pi terminal has focus. Mutating bridge tools are marked sequential. The bundled bridge truncates oversized JSON tool results into a valid wrapper object. VS Code chat RPC auto-cancels unsupported extension UI dialog requests so RPC sessions do not deadlock.
@@ -62,7 +62,7 @@ Sidebar views (all webview, registered under `pi` activity container):
 
 - `pi-agent-studio.open` (`Alt+Shift+P`) — open/focus pi terminal (also editor title bar)
 - `pi-agent-studio.openInNewWindow` — open pi then `workbench.action.moveEditorToNewWindow`
-- `pi-agent-studio.upgrade` — binary-only upgrade flow (does **not** run `pi update`)
+- `pi-agent-studio.upgrade` — binary-only upgrade via `pi update`
 - `pi-agent-studio.openSettingsJson` — open `~/.pi/agent/settings.json` in editor (creates empty `{}` if missing)
 - `pi-agent-studio.openModelsJson` — open `~/.pi/agent/models.json` in editor (creates empty `{ providers: {} }` if missing)
 
