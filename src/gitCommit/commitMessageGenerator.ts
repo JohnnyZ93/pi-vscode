@@ -16,6 +16,17 @@ import { getGitDiff } from "./gitUtils.ts";
 
 let commitGenerationAbortController: AbortController | undefined;
 
+function parseProviderModel(raw: string): { provider: string; modelId: string } | undefined {
+  const value = raw.trim();
+  if (!value) return undefined;
+  const idx = value.indexOf("/");
+  if (idx <= 0 || idx === value.length - 1) return undefined;
+  const provider = value.slice(0, idx).trim();
+  const modelId = value.slice(idx + 1).trim();
+  if (!provider || !modelId) return undefined;
+  return { provider, modelId };
+}
+
 const DEFAULT_PROMPT = {
   system:
     "You are a helpful assistant that generates informative git commit messages based on git diffs output. Skip preamble and remove all backticks surrounding the commit message. Based on the provided git diff, generate a conventional format commit message.\n\n```\n<type>[optional scope]: <description>\n\n[optional body list]\n```",
@@ -208,6 +219,28 @@ async function performCommitMsgGeneration(gitDiff: string, inputBox: any) {
     const authStorage = AuthStorage.create();
     const modelRegistry = ModelRegistry.create(authStorage);
 
+    const commitModelRaw = config.get<string>("pi-agent-studio.commitModel", "");
+    let model: ReturnType<typeof modelRegistry.find> | undefined;
+    if (commitModelRaw.trim()) {
+      const parsed = parseProviderModel(commitModelRaw);
+      if (!parsed) {
+        throw new Error(
+          `Invalid "pi-agent-studio.commitModel": "${commitModelRaw}". Expected format "provider/model".`,
+        );
+      }
+      model = modelRegistry.find(parsed.provider, parsed.modelId);
+      if (!model) {
+        throw new Error(
+          `Commit model "${parsed.provider}/${parsed.modelId}" not found in ~/.pi/agent/models.json.`,
+        );
+      }
+      if (!modelRegistry.hasConfiguredAuth(model)) {
+        throw new Error(
+          `Commit model "${parsed.provider}/${parsed.modelId}" has no configured auth (API key or OAuth).`,
+        );
+      }
+    }
+
     const created = await createAgentSession({
       cwd,
       agentDir,
@@ -216,6 +249,7 @@ async function performCommitMsgGeneration(gitDiff: string, inputBox: any) {
       sessionManager: SessionManager.inMemory(),
       authStorage,
       modelRegistry,
+      model,
     });
     session = created.session;
 

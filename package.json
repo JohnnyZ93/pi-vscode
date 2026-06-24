@@ -233,6 +233,13 @@
           "type": "string",
           "default": "",
           "description": "Custom system prompt for commit message generation. If not provided, uses the default prompt."
+        },
+        "pi-agent-studio.commitModel": {
+          "type": "string",
+          "default": "",
+          "pattern": "^$|^[^/]+/.+$",
+          "patternErrorMessage": "Format must be \"provider/model\", e.g. \"Zai/glm-5.2\".",
+          "description": "Model used to generate Git commit messages, in \"provider/model\" format (e.g. \"Zai/glm-5.2\")."
         }
       }
     },
