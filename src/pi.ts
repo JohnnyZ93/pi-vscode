@@ -1,9 +1,15 @@
-import { accessSync, constants } from "node:fs";
+import { accessSync, constants, realpathSync } from "node:fs";
 import { join } from "node:path";
 import * as vscode from "vscode";
 import { BRIDGE_EXTENSION_PATH } from "./constants.ts";
 import { resolvePiBinary } from "./_resolve.ts";
-import { createPiGlobalInstallCommand, PI_PACKAGE_MANAGERS } from "./upgrade.ts";
+import {
+  createPiGlobalInstallCommand,
+  createPiUpdateCommand,
+  guessPiPackageManager,
+  PI_PACKAGE_MANAGERS,
+  type PiPackageManager,
+} from "./upgrade.ts";
 
 let piExistsCache: boolean | undefined;
 
@@ -54,8 +60,33 @@ export async function upgradePiBinary(): Promise<void> {
 
   const terminal = vscode.window.createTerminal({ name: "Upgrade Pi" });
   terminal.show();
-  terminal.sendText(`pi update`);
-  void vscode.window.showInformationMessage("Upgrading Pi via `pi update`.");
+
+  // PI_OFFLINE=1 或 PI_SKIP_VERSION_CHECK=1 会跳过版本更新网络请求
+  const isOffline = process.env.PI_OFFLINE === "1" || process.env.PI_SKIP_VERSION_CHECK === "1";
+
+  if (isOffline) {
+    // 在 pi 子进程中，使用包管理器直接安装
+    let manager: PiPackageManager | undefined = guessPiPackageManager(piPath);
+    if (!manager) {
+      try {
+        manager = guessPiPackageManager(realpathSync(piPath));
+      } catch {}
+    }
+    if (!manager) {
+      manager = (await vscode.window.showQuickPick([...PI_PACKAGE_MANAGERS], {
+        placeHolder: `Could not infer the package manager for ${piPath}. Choose one to upgrade Pi globally.`,
+      })) as PiPackageManager | undefined;
+    }
+    if (!manager) return;
+    terminal.sendText(createPiGlobalInstallCommand(manager));
+    void vscode.window.showInformationMessage(
+      `Upgrading Pi with ${manager} (PI_OFFLINE detected). Found pi at: ${piPath}`,
+    );
+  } else {
+    // 正常环境，使用 pi update（更简洁）
+    terminal.sendText(createPiUpdateCommand(piPath, process.platform));
+    void vscode.window.showInformationMessage(`Upgrading Pi via "pi update".`);
+  }
 }
 
 /**
