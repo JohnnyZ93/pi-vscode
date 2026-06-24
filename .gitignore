@@ -6,3 +6,4 @@ dist
 *.vsix
 package-lock.json
 .DS_Store
+docs

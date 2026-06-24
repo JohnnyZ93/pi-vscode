@@ -63,7 +63,7 @@ ovsx get johnny-zhao/pi-agent-studio
 | `Pi: Open`                           | `Alt+Shift+P` | 在编辑器旁打开或聚焦 pi 终端                                                 |
 | `Pi: Open in New Window`             | —             | 打开 pi 终端并将其移动到新窗口                                               |
 | `Pi: Open Here`                      | —             | 在选中文件夹中打开 pi 终端（通过资源管理器右键菜单）                         |
-| `Pi: Upgrade Pi`                     | —             | 调用 `pi update` 升级 pi                                                     |
+| `Pi: Upgrade Pi`                     | —             | 调用 `pi update` 升级 pi（离线时回退到推断的包管理器）                       |
 | `Pi: Open settings.json`             | —             | 在编辑器中打开 `~/.pi/agent/settings.json`（不存在时创建 `{}`）              |
 | `Pi: Open models.json`               | —             | 在编辑器中打开 `~/.pi/agent/models.json`（不存在时创建 `{ providers: {} }`） |
 | `Pi: Generate Commit Message`        | —             | 基于 pi 从暂存区生成 AI Git commit message                                   |
@@ -128,13 +128,14 @@ ovsx get johnny-zhao/pi-agent-studio
 
 ## 配置项
 
-| 设置项                                | 类型     | 默认值      | 说明                                                     |
-| ------------------------------------- | -------- | ----------- | -------------------------------------------------------- |
-| `pi-agent-studio.path`                | `string` | `""`        | pi 二进制的绝对路径（留空则自动检测）                    |
-| `pi-agent-studio.env`                 | `object` | `{}`        | 合并到 pi 终端的环境变量（与桥接变量冲突时桥接变量优先） |
-| `pi-agent-studio.args`                | `array`  | `[]`        | 追加到 `--extension` 之后、调用方额外参数之前的 CLI 参数 |
-| `pi-agent-studio.commitLanguage`      | `string` | `"English"` | 生成 Git commit message 的语言（支持 14 种语言）         |
-| `pi-agent-studio.commitMessagePrompt` | `string` | `""`        | commit message 生成的自定义系统提示                      |
+| 设置项                                | 类型     | 默认值      | 说明                                                                   |
+| ------------------------------------- | -------- | ----------- | ---------------------------------------------------------------------- |
+| `pi-agent-studio.path`                | `string` | `""`        | pi 二进制的绝对路径（留空则自动检测）                                  |
+| `pi-agent-studio.env`                 | `object` | `{}`        | 合并到 pi 终端的环境变量（与桥接变量冲突时桥接变量优先）               |
+| `pi-agent-studio.args`                | `array`  | `[]`        | 追加到 `--extension` 之后、调用方额外参数之前的 CLI 参数               |
+| `pi-agent-studio.commitLanguage`      | `string` | `"English"` | 生成 Git commit message 的语言（支持 14 种语言）                       |
+| `pi-agent-studio.commitMessagePrompt` | `string` | `""`        | commit message 生成的自定义系统提示                                    |
+| `pi-agent-studio.commitModel`         | `string` | `""`        | commit message 生成所用模型，格式 `provider/model`（如 `Zai/glm-5.2`） |
 
 ## 从源码构建
 

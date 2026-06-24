@@ -63,7 +63,7 @@ ovsx get johnny-zhao/pi-agent-studio
 | `Pi: Open`                           | `Alt+Shift+P` | Open or focus the pi terminal beside the editor                                                |
 | `Pi: Open in New Window`             | —             | Open pi then move it to a new VS Code window                                                   |
 | `Pi: Open Here`                      | —             | Open a pi terminal in the selected folder (via explorer context menu)                          |
-| `Pi: Upgrade Pi`                     | —             | Upgrade pi via `pi update`                                                                     |
+| `Pi: Upgrade Pi`                     | —             | Upgrade pi via `pi update` (falls back to the inferred package manager when offline)           |
 | `Pi: Open settings.json`             | —             | Open `~/.pi/agent/settings.json` in the editor (creates an empty `{}` if missing)              |
 | `Pi: Open models.json`               | —             | Open `~/.pi/agent/models.json` in the editor (creates an empty `{ providers: {} }` if missing) |
 | `Pi: Generate Commit Message`        | —             | Generate an AI-powered Git commit message from staged changes using pi                         |
@@ -128,13 +128,14 @@ Example:
 
 ## Configuration
 
-| Setting                               | Type     | Default     | Description                                                                           |
-| ------------------------------------- | -------- | ----------- | ------------------------------------------------------------------------------------- |
-| `pi-agent-studio.path`                | `string` | `""`        | Absolute path to the pi binary (auto-detected if empty)                               |
-| `pi-agent-studio.env`                 | `object` | `{}`        | Environment variables merged into the pi terminal (bridge vars win on key collision)  |
-| `pi-agent-studio.args`                | `array`  | `[]`        | Extra CLI args appended after `--extension` and before any caller-supplied extra args |
-| `pi-agent-studio.commitLanguage`      | `string` | `"English"` | Language for generated Git commit messages (14 languages supported)                   |
-| `pi-agent-studio.commitMessagePrompt` | `string` | `""`        | Custom system prompt for commit message generation                                    |
+| Setting                               | Type     | Default     | Description                                                                               |
+| ------------------------------------- | -------- | ----------- | ----------------------------------------------------------------------------------------- |
+| `pi-agent-studio.path`                | `string` | `""`        | Absolute path to the pi binary (auto-detected if empty)                                   |
+| `pi-agent-studio.env`                 | `object` | `{}`        | Environment variables merged into the pi terminal (bridge vars win on key collision)      |
+| `pi-agent-studio.args`                | `array`  | `[]`        | Extra CLI args appended after `--extension` and before any caller-supplied extra args     |
+| `pi-agent-studio.commitLanguage`      | `string` | `"English"` | Language for generated Git commit messages (14 languages supported)                       |
+| `pi-agent-studio.commitMessagePrompt` | `string` | `""`        | Custom system prompt for commit message generation                                        |
+| `pi-agent-studio.commitModel`         | `string` | `""`        | Model used for commit message generation, in `provider/model` format (e.g. `Zai/glm-5.2`) |
 
 ## Building from source
 
